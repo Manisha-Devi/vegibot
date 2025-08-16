@@ -130,7 +130,7 @@ async function handleIntent(intent, entities, msg = null) {
     }
 }
 
-// Flexible Registration Handler - Can handle multiple data at once
+// Flexible Registration Handler - Improved with better UX and validation
 function handleFlexibleRegistration(userId, message, entities) {
     if (!global.userRegistrationState) {
         global.userRegistrationState = {};
@@ -139,19 +139,33 @@ function handleFlexibleRegistration(userId, message, entities) {
     if (!global.userRegistrationState[userId]) {
         global.userRegistrationState[userId] = {
             step: 'collecting',
-            data: {}
+            data: {},
+            attempts: 0
         };
     }
     
     const state = global.userRegistrationState[userId];
+    state.attempts += 1;
     
-    // Extract all possible data from current message using Wit.ai entities
+    // Extract all possible data from current message
     const extractedData = extractAllRegistrationData(message, entities);
     
-    // Merge extracted data with existing data
+    // Track what was updated in this message
+    const updatedFields = [];
+    const newFields = [];
+    
+    // Merge extracted data with existing data (allow updates)
     Object.keys(extractedData).forEach(key => {
-        if (extractedData[key] && !state.data[key]) {
-            state.data[key] = extractedData[key];
+        if (extractedData[key]) {
+            if (state.data[key]) {
+                // Field was updated
+                updatedFields.push(key);
+                state.data[key] = extractedData[key];
+            } else {
+                // New field added
+                newFields.push(key);
+                state.data[key] = extractedData[key];
+            }
         }
     });
     
@@ -159,47 +173,153 @@ function handleFlexibleRegistration(userId, message, entities) {
     const requiredFields = ['name', 'gender', 'age', 'mobile', 'address'];
     const missingFields = requiredFields.filter(field => !state.data[field]);
     
-    // If all data is complete
-    if (missingFields.length === 0) {
+    // Validate extracted data
+    const validationWarnings = validateRegistrationData(state.data);
+    
+    // If all data is complete and valid
+    if (missingFields.length === 0 && validationWarnings.length === 0) {
         const userData = state.data;
         delete global.userRegistrationState[userId]; // Clear state
         
-        return `🎉 **Registration Complete!** 🎉\n\n📝 **Aapka Account Details:**\n\n👤 Name: ${userData.name}\n🚻 Gender: ${userData.gender}\n🎂 Age: ${userData.age} years\n📱 Mobile: ${userData.mobile}\n🏠 Address: ${userData.address}\n\n✅ Account successfully create ho gaya!\n🆔 Customer ID: CUST${Math.floor(Math.random() * 100000)}\n\n🛒 Ab aap vegetables order kar sakte hain!\nType 'Menu' to start shopping! 😊`;
+        return `🎉 **Registration Complete!** 🎉\n\n📝 **Aapka Account Details:**\n\n✅ Name: ${userData.name}\n✅ Gender: ${userData.gender}\n✅ Age: ${userData.age} years\n✅ Mobile: ${userData.mobile}\n✅ Address: ${userData.address}\n\n🆔 Customer ID: CUST${Math.floor(Math.random() * 100000)}\n\n🛒 Ab aap vegetables order kar sakte hain!\nType 'Menu' to start shopping! 😊`;
     }
     
-    // Show what we got and ask for remaining
+    // Build response with icons and updates
     let response = "📝 **Registration Progress:**\n\n";
     
-    // Show received data
-    if (state.data.name) response += `✅ Name: ${state.data.name}\n`;
-    if (state.data.gender) response += `✅ Gender: ${state.data.gender}\n`;
-    if (state.data.age) response += `✅ Age: ${state.data.age} years\n`;
-    if (state.data.mobile) response += `✅ Mobile: ${state.data.mobile}\n`;
-    if (state.data.address) response += `✅ Address: ${state.data.address}\n`;
+    // Show what was updated/added in this message
+    if (updatedFields.length > 0) {
+        response += "🔄 **Updated:**\n";
+        updatedFields.forEach(field => {
+            response += `✅ ${getFieldDisplayName(field)}: ${state.data[field]}\n`;
+        });
+        response += "\n";
+    }
     
-    response += "\n🔍 **Still needed:**\n";
+    if (newFields.length > 0) {
+        response += "✨ **Added:**\n";
+        newFields.forEach(field => {
+            response += `✅ ${getFieldDisplayName(field)}: ${state.data[field]}\n`;
+        });
+        response += "\n";
+    }
     
-    // Ask for missing fields
-    const fieldNames = {
-        'name': 'Full Name',
-        'gender': 'Gender (Male/Female/Other)',
-        'age': 'Age',
-        'mobile': 'Mobile Number',
-        'address': 'Complete Address'
-    };
-    
-    missingFields.forEach(field => {
-        response += `❌ ${fieldNames[field]}\n`;
+    // Show all current data with icons
+    response += "📊 **Current Status:**\n";
+    requiredFields.forEach(field => {
+        if (state.data[field]) {
+            response += `✅ ${getFieldDisplayName(field)}: ${state.data[field]}\n`;
+        } else {
+            response += `❌ ${getFieldDisplayName(field)}: *Required*\n`;
+        }
     });
     
-    response += "\n💡 **Aap ye kar sakte hain:**\n";
-    response += "• Ek saath sab details bhej sakte hain\n";
-    response += "• Ya step by step bhi de sakte hain\n\n";
-    response += "**Example:**\n";
-    response += "'Mera naam Rohit Kumar hai, male hun, 28 years old, mobile 9876543210'\n\n";
-    response += "Ya sirf jo missing hai woh send karo! 😊";
+    // Show validation warnings
+    if (validationWarnings.length > 0) {
+        response += "\n⚠️ **Warnings:**\n";
+        validationWarnings.forEach(warning => {
+            response += `🚨 ${warning}\n`;
+        });
+    }
+    
+    // Show missing fields if any
+    if (missingFields.length > 0) {
+        response += "\n❗ **Missing Required Fields:**\n";
+        missingFields.forEach(field => {
+            response += `❌ ${getFieldDisplayName(field)}\n`;
+        });
+        
+        response += "\n💡 **Next Steps:**\n";
+        
+        // Provide specific examples based on missing fields
+        if (missingFields.includes('name')) {
+            response += "• Name: 'Mera naam Rohit Kumar hai'\n";
+        }
+        if (missingFields.includes('mobile')) {
+            response += "• Mobile: '9876543210'\n";
+        }
+        if (missingFields.includes('address')) {
+            response += "• Address: 'Sector 15, Noida, UP 201301'\n";
+        }
+        if (missingFields.includes('age')) {
+            response += "• Age: '25 years old'\n";
+        }
+        if (missingFields.includes('gender')) {
+            response += "• Gender: 'Male' ya 'Female'\n";
+        }
+    }
+    
+    // Help message based on attempts
+    if (state.attempts > 3 && missingFields.length > 0) {
+        response += "\n🤔 **Having trouble?**\n";
+        response += "• Ek saath sab details bhej sakte hain\n";
+        response += "• Ya 'help' type karo detailed guidance ke liye\n";
+        response += "• Example: 'Rohit, male, 28, 9876543210, Noida'\n";
+    }
+    
+    response += "\n📝 Type any missing info to continue! 😊";
     
     return response;
+}
+
+// Helper function to get field display names
+function getFieldDisplayName(field) {
+    const fieldNames = {
+        'name': 'Full Name',
+        'gender': 'Gender',
+        'age': 'Age',
+        'mobile': 'Mobile Number',
+        'address': 'Address'
+    };
+    return fieldNames[field] || field;
+}
+
+// Validation function for registration data
+function validateRegistrationData(data) {
+    const warnings = [];
+    
+    // Validate mobile number
+    if (data.mobile) {
+        const cleanMobile = data.mobile.replace(/\s/g, '');
+        if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
+            warnings.push("Mobile number should be 10 digits starting with 6-9");
+        }
+    }
+    
+    // Validate age
+    if (data.age) {
+        const age = parseInt(data.age);
+        if (age < 18 || age > 100) {
+            warnings.push("Age should be between 18-100 years");
+        }
+    }
+    
+    // Validate name
+    if (data.name) {
+        if (data.name.length < 2) {
+            warnings.push("Name should be at least 2 characters");
+        }
+        if (!/^[a-zA-Z\s]+$/.test(data.name)) {
+            warnings.push("Name should contain only letters and spaces");
+        }
+    }
+    
+    // Validate gender
+    if (data.gender) {
+        const validGenders = ['male', 'female', 'other'];
+        if (!validGenders.includes(data.gender.toLowerCase())) {
+            warnings.push("Gender should be Male, Female, or Other");
+        }
+    }
+    
+    // Validate address
+    if (data.address) {
+        if (data.address.length < 10) {
+            warnings.push("Address seems too short, please provide complete address");
+        }
+    }
+    
+    return warnings;
 }
 
 // Extract all possible registration data from message and entities
