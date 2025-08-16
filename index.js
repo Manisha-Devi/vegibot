@@ -14,13 +14,13 @@ const client = new Client({
 });
 
 client.on("qr", (qr) => {
-    console.log("📱 QR Code scan करें WhatsApp में:");
+    console.log("📱 QR Code scan karo WhatsApp me:");
     qrcode.generate(qr, { small: true });
 });
 
 client.on("ready", () => {
     console.log("✅ WhatsApp Bot Successfully Connected!");
-    console.log("🤖 Bot अब messages का इंतज़ार कर रहा है...");
+    console.log("🤖 Bot ready hai messages ke liye...");
 });
 
 client.on("authenticated", () => {
@@ -53,7 +53,7 @@ client.on("message", async (msg) => {
         const witData = await witAiMessage(msg.body);
         
         if (!witData) {
-            const errorMsg = "🤔 Sorry, मुझे समझने में दिक्कत हो रही है। कृपया थोड़ी देर बाद try करें।";
+            const errorMsg = "🤔 Sorry, samjhane me problem ho rahi hai. Thodi der baad try karo.";
             return client.sendMessage(msg.from, errorMsg);
         }
 
@@ -95,7 +95,7 @@ client.on("message", async (msg) => {
             }
             // If still low confidence, ask for clarification
             else if (confidence < 0.5) {
-                const clarificationMsg = "🤔 मुझे आपका message पूरी तरह समझ नहीं आया। क्या आप थोड़ा और clear में बता सकते हैं?\n\nExample:\n• 'Tomato available hai?'\n• '2 kg onion order करना है'\n• 'Help' या 'Menu'";
+                const clarificationMsg = "🤔 Aapka message poori tarah samajh nahi aaya. Thoda clear me bata sakte hain?\n\nExample:\n• 'Tomato available hai?'\n• '2 kg onion order karna hai'\n• 'Help' ya 'Menu'";
                 return client.sendMessage(msg.from, clarificationMsg);
             }
         }
@@ -112,14 +112,14 @@ client.on("message", async (msg) => {
 
     } catch (error) {
         console.error("❌ Error processing message:", error);
-        const errorReply = "😅 Sorry, कुछ technical issue हो गई है। Please try again!";
+        const errorReply = "😅 Sorry, kuch technical issue ho gayi hai. Please try again!";
         client.sendMessage(msg.from, errorReply);
     }
 });
 
 // Handle process termination gracefully
 process.on('SIGINT', async () => {
-    console.log('🛑 Bot को safely shutdown कर रहे हैं...');
+    console.log('🛑 Bot ko safely shutdown kar rahe hain...');
     await client.destroy();
     process.exit(0);
 });

@@ -1,3 +1,4 @@
+
 // handlers/intentHandler.js
 // const callN8n = require("../services/n8nService"); // Temporarily disabled
 
@@ -19,40 +20,38 @@ INTENT TRIGGER EXAMPLES:
 async function handleIntent(intent, entities, msg = null) {
     switch (intent) {
         case "greeting":
-            // Multiple friendly greetings (Hindi + English mix for human-like touch)
+            // Multiple friendly greetings in Roman Hindi + English
             const greetings = [
-                "Hello 👋 How can I help you today? Aapki kaise madad kar sakta hu?",
-                "Hi there! 😊 Welcome to VegiBot! Mai aapki vegetable shopping me help karunga.",
-                "Hey 🙌 Great to meet you! Bataiye what vegetables do you need?",
-                "Hi 👋 I'm here to assist you! Vegetables ki inquiry kar sakte hai.",
-                "Namaste 🙏 How are you doing? Mai fresh vegetables provide karta hu.",
-                "Hello 🌸 Hope you're having a good day! Kaise help kar sakta hu?",
-                "Hey 😄 What's up? Tell me what vegetables you're looking for!",
-                "Hi 👋 Ready to help! Batao kis cheez me support chahiye?"
+                "Hello 👋 Welcome to VegiBot! Main aapki vegetable shopping me help karunga!",
+                "Hi there! 😊 Namaste! Kaise help kar sakta hun aapki?",
+                "Hey 🙌 Great to see you! Bataiye kya vegetables chahiye?",
+                "Hello 👋 Main yahan hu aapki madad ke liye! Fresh vegetables available hain.",
+                "Namaste 🙏 Kaise ho? Fresh sabziyan mangwani hain?",
+                "Hi 😄 VegiBot ready hai! Koi bhi vegetable ke bare me puch sakte hain!"
             ];
             return greetings[Math.floor(Math.random() * greetings.length)];
 
         case "faq":
         case "help":
         case "menu":
-            return `🤖 How can I help you? Mai aapki kaise madad kar sakta hu:\n\n🥬 Check vegetable availability & prices\n📦 Place your order easily\n🚚 Track your delivery status\n❌ Cancel or modify orders\n📝 Register as new customer\n💰 Get price information\n📍 Check delivery areas\n\nExamples:\n"Is tomato available?" / "Tomato milega?"\n"I want 2 kg onions" / "2 kg onion chahiye"\n"Track my order" / "Order track karo"\n\nFeel free to ask anything! Koi bhi sawal puch sakte hai! 😊`;
+            return `🤖 VegiBot Menu - Main ye sab kar sakta hun:\n\n🥬 Vegetable availability & prices check karna\n📦 Easy order placement\n🚚 Delivery tracking\n❌ Order cancel ya modify karna\n📝 New customer registration\n💰 Price information\n📍 Delivery areas check karna\n\nExamples:\n"Tomato available hai?" \n"2 kg onion chahiye"\n"Order track karo"\n"Help" ya "Menu"\n\nKoi bhi sawal pucho! 😊`;
 
         case "small_talk":
             const funReplies = [
-                "Haha 😄 That's funny! But kya aapko vegetables bhi chahiye?",
-                "😂 Good one! Need any fresh vegetables today? Kuch fresh sabzi mangwani hai?",
-                "😅 You're quite the joker! How about placing an order? Order kar dete hai koi?",
-                "🤣 Hahaha, nice! Want to check our vegetable list? Vegetables ki list dekhenge?"
+                "Haha 😄 Funny! Par kya vegetables bhi order karni hain?",
+                "😂 Nice one! Fresh sabziyan bhi mangwao na!",
+                "😅 Accha joke tha! Order placement ke liye ready ho?",
+                "🤣 Good sense of humor! Vegetable list dekhna chahoge?"
             ];
             return funReplies[Math.floor(Math.random() * funReplies.length)];
 
         case "vegetable_inquiry":
             let veg = entities["vegetable_name:vegetable_name"]?.[0]?.body || "vegetables";
             const vegInquiryReplies = [
-                `🥦 Yes! ${veg} is available fresh! ${veg} bilkul fresh hai. How much do you need? Kitna chahiye?`,
-                `✅ Absolutely! ${veg} is in stock with best quality guarantee. Quantity batao kitni chahiye?`,
-                `🌿 ${veg} is perfectly fresh and reasonably priced! Price bhi accha hai. How many kg? Kitne kg chahiye?`,
-                `👍 ${veg} is available sir! Direct from farm se aaya hai. Shall I place your order? Order kar du?`
+                `🥦 Yes! ${veg} bilkul fresh available hai! Kitna quantity chahiye?`,
+                `✅ Haan ${veg} stock me hai, best quality guaranteed! Kitne kg?`,
+                `🌿 ${veg} fresh hai aur reasonable price me! Order place karu?`,
+                `👍 ${veg} available hai sir! Farm fresh quality! Quantity bataiye?`
             ];
             return vegInquiryReplies[Math.floor(Math.random() * vegInquiryReplies.length)];
 
@@ -60,58 +59,57 @@ async function handleIntent(intent, entities, msg = null) {
             let qty = entities["quantity:quantity"]?.[0]?.body || "1 kg";
             let item = entities["vegetable_name:vegetable_name"]?.[0]?.body || "vegetables";
             const orderReplies = [
-                `✅ Perfect! Your order for ${qty} ${item} is confirmed! Aapka order confirm ho gaya! 📝\n\nDelivery time: 2-3 hours\nPayment: Cash on delivery\n\nOrder ID: ORD${Math.floor(Math.random() * 10000)}`,
-                `🎉 Great choice! ${qty} ${item} successfully booked! Order book ho gaya!\n\n✓ Fresh quality guarantee\n✓ Same day delivery\n✓ Best price guaranteed\n\nThank you for ordering! Order ke liye dhanyawad! 🙏`,
-                `👌 Done! ${qty} ${item} order is successful! Order successful hai!\n\nYour order will be delivered soon. Jaldi deliver ho jayega.\nAny special instructions? Koi special instructions hai?`,
+                `✅ Perfect! ${qty} ${item} ka order confirm ho gaya! 📝\n\nDelivery time: 2-3 hours\nPayment: Cash on delivery\n\nOrder ID: ORD${Math.floor(Math.random() * 10000)}\n\nDhanyawad! 🙏`,
+                `🎉 Great! ${qty} ${item} successfully book ho gaya!\n\n✓ Fresh quality guarantee\n✓ Same day delivery\n✓ Best price\n\nOrder placed successfully! 👍`,
+                `👌 Done! ${qty} ${item} order complete!\n\nJaldi deliver kar denge. Special instructions koi hai?`,
             ];
             return orderReplies[Math.floor(Math.random() * orderReplies.length)];
 
         case "track_delivery":
             let orderId = entities["order_id:order_id"]?.[0]?.body || "your order";
             const trackingReplies = [
-                `📦 Tracking ${orderId}:\n\n✅ Order confirmed / Order confirm hai\n🚚 Out for delivery / Delivery ke liye nikla hai\n⏰ Expected: 30-45 minutes\n\nDelivery boy contact: 9876543210`,
-                `🔍 Checking ${orderId} status...\n\n📍 Status: On the way / Raaste me hai\n🕐 ETA: 1 hour / 1 ghante me pahunchega\n👨‍🚚 Delivery partner: Rahul\n\nTrack live location: [Link]`,
+                `📦 ${orderId} ka status:\n\n✅ Order confirmed\n🚚 Out for delivery\n⏰ Expected: 30-45 minutes\n\nDelivery boy contact: 9876543210`,
+                `🔍 ${orderId} checking...\n\n📍 Status: On the way\n🕐 ETA: 1 hour\n👨‍🚚 Delivery partner: Rahul\n\nTrack kar sakte hain live!`,
             ];
             return trackingReplies[Math.floor(Math.random() * trackingReplies.length)];
 
         case "change_cancel_order":
             const cancelReplies = [
-                "🔄 To change/cancel your order:\n\n1. Send your Order ID / Apna Order ID bhejo\n2. Tell me what to change / Kya change karna hai batao\n\nNote: Only possible before delivery starts / Delivery shuru hone se pehle hi possible hai.",
-                "❌ Want to cancel? No problem! Cancel karna chahte ho?\n\nShare Order ID, I'll cancel immediately / Order ID share karo, turant cancel kar dunga.\n\n⚠️ If order is dispatched, cancellation not possible / Agar order dispatch ho gaya to cancel nahi hoga."
+                "🔄 Order change/cancel karne ke liye:\n\n1. Order ID share karo\n2. Kya change karna hai bataiye\n\nNote: Delivery start hone se pehle hi possible hai",
+                "❌ Cancel karna hai? No problem!\n\nOrder ID bhejo, immediately cancel kar dunga.\n\n⚠️ Agar dispatch ho gaya to cancel nahi hoga"
             ];
             return cancelReplies[Math.floor(Math.random() * cancelReplies.length)];
 
         case "register_customer":
-            // Temporarily handle registration without n8n
             const registrationReplies = [
-                "📝 For registration, I need these details:\n\n1. Your name / Aapka naam\n2. Mobile number\n3. Complete address / Pura address\n4. Area/locality / Area ya locality\n\nShare these details, I'll create your account! Details share karo, account bana dunga! 😊",
-                "🆕 Want to create new account? Great! Naya account banana hai?\n\nJust need these details / Bas ye details chahiye:\n✓ Full name\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nPlease send them! Bhej dijiye! 👍"
+                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Mobile number\n3. Complete address\n4. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
+                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
             ];
             return registrationReplies[Math.floor(Math.random() * registrationReplies.length)];
 
         case "thanks":
             const thanksReplies = [
-                "You're welcome! Aapka swagat hai! 🙏",
-                "Always happy to help! Hamesha madad ke liye ready hu! 😊",
-                "No problem! Koi baat nahi! 👍 Glad I could help!",
-                "My pleasure! Khushi hui madad karke! 🌸",
+                "Welcome hai! Koi aur help? 🙏",
+                "No problem! Always ready to help! 😊",
+                "Koi baat nahi! Khushi hui madad karke! 👍",
+                "My pleasure! Aur kuch chahiye? 🌸",
             ];
             return thanksReplies[Math.floor(Math.random() * thanksReplies.length)];
 
         case "goodbye":
             const goodbyeReplies = [
-                "Goodbye! Have a great day! Acha din ho! 👋",
-                "See you soon! Jaldi milenge! 😊",
-                "Bye! Take care! Khayal rakhiye! 👋",
-                "See you later! Phir milte hain! 🙌",
+                "Bye! Take care! Phir milenge! 👋",
+                "See you soon! Acha din ho! 😊",
+                "Alvida! Khayal rakhiye apna! 👋",
+                "Goodbye! Come back soon! 🙌",
             ];
             return goodbyeReplies[Math.floor(Math.random() * goodbyeReplies.length)];
 
         default:
             const defaultReplies = [
-                "🤔 Sorry, I didn't understand that. Mujhe samajh nahi aaya. You can try:\n\n• Type 'Menu' or 'Help'\n• Ask 'Is tomato available?' / 'Tomato available hai?'\n• Say 'I want to order' / 'Order karna hai'\n\nI'm here to help! Madad ke liye yaha hu! 😊",
-                "😅 Hmm, that wasn't clear. Ye clear nahi tha. Examples:\n\n🥬 'What's the onion price?' / 'Onion ka price?'\n📦 'Want to place order' / 'Order place karna hai'\n🚚 'Track delivery' / 'Delivery track karo'\n📝 'Want to register' / 'Register karna hai'\n\nFeel free to ask anything! Koi bhi sawal pucho!",
-                "🙏 Sorry, that wasn't clear. Maaf karo, clear nahi tha. You can try:\n\n✓ Ask about vegetable names\n✓ Order related questions\n✓ Delivery information\n✓ Price checking\n\nType 'Help' for complete menu! Complete menu ke liye 'Help' type karo!"
+                "🤔 Sorry, samajh nahi aaya. Try karo:\n\n• 'Menu' ya 'Help' type karo\n• 'Tomato available hai?' pucho\n• 'Order karna hai' bolo\n\nMain help karne ke liye ready hun! 😊",
+                "😅 Ye clear nahi tha. Examples:\n\n🥬 'Onion ka price kya hai?'\n📦 'Order place karna hai'\n🚚 'Delivery track karo'\n📝 'Register karna hai'\n\nKoi bhi sawal pucho freely!",
+                "🙏 Sorry, clear nahi tha. Try karo:\n\n✓ Vegetable names pucho\n✓ Order related questions\n✓ Delivery information\n✓ Price checking\n\n'Help' type karo complete menu ke liye!"
             ];
             return defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
     }

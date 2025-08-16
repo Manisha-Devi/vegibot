@@ -39,7 +39,7 @@ async function witAiMessage(msg, retries = 2) {
             cleanMsg = cleanMsg.replace(regex, `${hindi} ${wordMappings[hindi]}`);
         });
         
-        console.log(`🔄 Sending to Wit.ai: "${cleanMsg}"`);
+        console.log(`🔄 Wit.ai ko bhej rahe hain: "${cleanMsg}"`);
         
         const resp = await axios.get(
             `https://api.wit.ai/message?v=20240801&q=${encodeURIComponent(cleanMsg)}`,
@@ -53,7 +53,7 @@ async function witAiMessage(msg, retries = 2) {
         );
 
         if (resp.data && resp.data.intents) {
-            console.log("✅ Wit.ai response received successfully");
+            console.log("✅ Wit.ai response successfully mil gaya");
             return resp.data;
         } else {
             console.log("⚠️ Wit.ai returned empty or invalid response");
