@@ -81,11 +81,26 @@ async function handleIntent(intent, entities, msg = null) {
             return cancelReplies[Math.floor(Math.random() * cancelReplies.length)];
 
         case "register_customer":
-            const registrationReplies = [
-                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Mobile number\n3. Complete address\n4. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
-                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
-            ];
-            return registrationReplies[Math.floor(Math.random() * registrationReplies.length)];
+            // Initialize registration state if not exists
+            if (!global.userRegistrationState) {
+                global.userRegistrationState = {};
+            }
+            
+            const userId = msg?.from || 'unknown';
+            
+            if (!global.userRegistrationState[userId]) {
+                global.userRegistrationState[userId] = {
+                    step: 'name',
+                    data: {}
+                };
+                return "🆕 Account banana shuru karte hain! 😊\n\n📝 **Step 1:** Pehle aapka **Full Name** bataiye\n\nExample: 'Mera naam Rahul Kumar hai' ya sirf 'Rahul Kumar'";
+            }
+            
+            return handleRegistrationFlow(userId, msg.body, entities);
+
+        case "registration_data":
+            const userId2 = msg?.from || 'unknown';
+            return handleRegistrationFlow(userId2, msg.body, entities);
 
         case "thanks":
             const thanksReplies = [
@@ -113,6 +128,131 @@ async function handleIntent(intent, entities, msg = null) {
             ];
             return defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
     }
+}
+
+// Registration flow handler
+function handleRegistrationFlow(userId, message, entities) {
+    if (!global.userRegistrationState) {
+        global.userRegistrationState = {};
+    }
+    
+    if (!global.userRegistrationState[userId]) {
+        global.userRegistrationState[userId] = {
+            step: 'name',
+            data: {}
+        };
+    }
+    
+    const state = global.userRegistrationState[userId];
+    
+    switch (state.step) {
+        case 'name':
+            // Extract name from entities or message
+            let name = entities["person_name:person_name"]?.[0]?.body || 
+                      entities["wit$contact:contact"]?.[0]?.body || 
+                      extractNameFromMessage(message);
+            
+            if (name) {
+                state.data.name = name;
+                state.step = 'gender';
+                return `✅ Name save ho gaya: **${name}**\n\n👤 **Step 2:** Gender bataiye\n\nExample: 'Male', 'Female' ya 'Other'`;
+            } else {
+                return "🤔 Name clear nahi mila. Please clearly bataiye:\n\nExample:\n• 'Mera naam Priya Sharma hai'\n• 'Rohit Singh'\n• 'My name is Amit'";
+            }
+            
+        case 'gender':
+            let gender = extractGenderFromMessage(message);
+            if (gender) {
+                state.data.gender = gender;
+                state.step = 'age';
+                return `✅ Gender save: **${gender}**\n\n🎂 **Step 3:** Aapki age kya hai?\n\nExample: '25 years', '30 saal', ya sirf '28'`;
+            } else {
+                return "🤔 Gender clear nahi mila. Please bataiye:\n\n• 'Male' ya 'M'\n• 'Female' ya 'F'\n• 'Other'";
+            }
+            
+        case 'age':
+            let age = entities["wit$age_of_person:age_of_person"]?.[0]?.value || 
+                     entities["wit$number:number"]?.[0]?.value || 
+                     extractNumberFromMessage(message);
+            
+            if (age && age > 0 && age < 150) {
+                state.data.age = age;
+                state.step = 'mobile';
+                return `✅ Age save: **${age} years**\n\n📱 **Step 4:** Mobile number share karo\n\nExample: '9876543210' ya '+91 9876543210'`;
+            } else {
+                return "🤔 Valid age nahi mili. Please bataiye:\n\nExample:\n• '25 years old'\n• '30 saal'\n• '28'";
+            }
+            
+        case 'mobile':
+            let mobile = entities["wit$phone_number:phone_number"]?.[0]?.value || 
+                        extractMobileFromMessage(message);
+            
+            if (mobile && mobile.length >= 10) {
+                state.data.mobile = mobile;
+                state.step = 'address';
+                return `✅ Mobile save: **${mobile}**\n\n🏠 **Step 5:** Complete address bataiye\n\nExample: 'H-123, Sector 15, Gurgaon, Haryana, 122001'`;
+            } else {
+                return "🤔 Valid mobile number nahi mila. Please share karo:\n\nExample:\n• '9876543210'\n• '+91 9876543210'\n• '91-9876543210'";
+            }
+            
+        case 'address':
+            let address = message.trim();
+            if (address.length > 10) {
+                state.data.address = address;
+                state.step = 'complete';
+                
+                // Registration complete
+                const userData = state.data;
+                delete global.userRegistrationState[userId]; // Clear state
+                
+                return `🎉 **Registration Complete!** 🎉\n\n📝 **Aapka Account Details:**\n\n👤 Name: ${userData.name}\n🚻 Gender: ${userData.gender}\n🎂 Age: ${userData.age} years\n📱 Mobile: ${userData.mobile}\n🏠 Address: ${userData.address}\n\n✅ Account successfully create ho gaya!\n🆔 Customer ID: CUST${Math.floor(Math.random() * 100000)}\n\n🛒 Ab aap vegetables order kar sakte hain!\nType 'Menu' to start shopping! 😊`;
+            } else {
+                return "🤔 Address complete nahi laga. Please detailed address share karo:\n\nExample:\n• 'H-123, Sector 15, Gurgaon, Haryana, 122001'\n• 'Flat 4B, Green Valley Apartments, Mumbai-400001'";
+            }
+            
+        default:
+            delete global.userRegistrationState[userId];
+            return "🔄 Kuch error hui. Registration restart karte hain!\nType 'Register' to begin again.";
+    }
+}
+
+// Helper functions
+function extractNameFromMessage(message) {
+    const cleanMsg = message.toLowerCase().trim();
+    
+    // Pattern matching for names
+    let nameMatch = cleanMsg.match(/(?:mera naam|my name is|naam hai|i am|call me)\s+([a-zA-Z\s]+)/);
+    if (nameMatch) {
+        return nameMatch[1].trim();
+    }
+    
+    // If message looks like a name (only letters and spaces)
+    if (/^[a-zA-Z\s]{2,30}$/.test(message.trim())) {
+        return message.trim();
+    }
+    
+    return null;
+}
+
+function extractGenderFromMessage(message) {
+    const cleanMsg = message.toLowerCase().trim();
+    
+    if (cleanMsg.match(/\b(male|m|boy|man|ladka|mard)\b/)) return "Male";
+    if (cleanMsg.match(/\b(female|f|girl|woman|ladki|aurat)\b/)) return "Female";
+    if (cleanMsg.match(/\b(other|others)\b/)) return "Other";
+    
+    return null;
+}
+
+function extractNumberFromMessage(message) {
+    const numbers = message.match(/\d+/);
+    return numbers ? parseInt(numbers[0]) : null;
+}
+
+function extractMobileFromMessage(message) {
+    const mobilePattern = /(?:\+91\s?)?(?:91\s?)?[6-9]\d{9}/;
+    const match = message.match(mobilePattern);
+    return match ? match[0].replace(/\s/g, '') : null;
 }
 
 module.exports = handleIntent;

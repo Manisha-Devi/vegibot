@@ -67,13 +67,22 @@ client.on("message", async (msg) => {
         // Intent detection with fallback logic
         let finalIntent = intent;
         
+        // Check if user is in registration flow
+        const userId = msg.from;
+        if (global.userRegistrationState && global.userRegistrationState[userId]) {
+            finalIntent = "registration_data";
+        }
         // Keyword-based fallback for low confidence
-        if (confidence < 0.7) {
+        else if (confidence < 0.7) {
             const msgLower = msg.body.toLowerCase();
             
             // Greeting keywords
             if (msgLower.match(/\b(hello|hi|hey|namaste|good morning|good evening)\b/i)) {
                 finalIntent = "greeting";
+            }
+            // Registration keywords
+            else if (msgLower.match(/\b(register|account|signup|sign up|registration)\b/i)) {
+                finalIntent = "register_customer";
             }
             // Vegetable inquiry keywords
             else if (msgLower.match(/\b(available|price|milega|kitna|rate)\b/i) && 
@@ -95,7 +104,7 @@ client.on("message", async (msg) => {
             }
             // If still low confidence, ask for clarification
             else if (confidence < 0.5) {
-                const clarificationMsg = "🤔 Aapka message poori tarah samajh nahi aaya. Thoda clear me bata sakte hain?\n\nExample:\n• 'Tomato available hai?'\n• '2 kg onion order karna hai'\n• 'Help' ya 'Menu'";
+                const clarificationMsg = "🤔 Aapka message poori tarah samajh nahi aaya. Thoda clear me bata sakte hain?\n\nExample:\n• 'Tomato available hai?'\n• '2 kg onion order karna hai'\n• 'Help' ya 'Menu'\n• 'Register karna hai'";
                 return client.sendMessage(msg.from, clarificationMsg);
             }
         }
