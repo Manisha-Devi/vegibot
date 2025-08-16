@@ -14,8 +14,30 @@ async function witAiMessage(msg, retries = 2) {
     }
 
     try {
-        // Clean and prepare message
-        const cleanMsg = msg.trim().substring(0, 280); // Limit message length
+        // Clean and prepare message - normalize for better intent detection
+        let cleanMsg = msg.trim().toLowerCase().substring(0, 280);
+        
+        // Common Hindi-English word mappings for better detection
+        const wordMappings = {
+            'kya': 'what',
+            'hai': 'is',
+            'chahiye': 'want',
+            'karna': 'do',
+            'banana': 'make',
+            'milega': 'available',
+            'price': 'price',
+            'kitna': 'how much',
+            'track': 'track',
+            'cancel': 'cancel',
+            'order': 'order',
+            'delivery': 'delivery'
+        };
+        
+        // Apply mappings but keep original structure
+        Object.keys(wordMappings).forEach(hindi => {
+            const regex = new RegExp(`\\b${hindi}\\b`, 'gi');
+            cleanMsg = cleanMsg.replace(regex, `${hindi} ${wordMappings[hindi]}`);
+        });
         
         console.log(`🔄 Sending to Wit.ai: "${cleanMsg}"`);
         

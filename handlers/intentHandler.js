@@ -1,6 +1,21 @@
 // handlers/intentHandler.js
 // const callN8n = require("../services/n8nService"); // Temporarily disabled
 
+// Intent Examples for better understanding:
+/*
+INTENT TRIGGER EXAMPLES:
+- greeting: "hello", "hi", "namaste", "hey", "good morning"
+- vegetable_inquiry: "tomato available hai?", "onion price?", "potato milega?"
+- place_order: "2 kg onion order karna hai", "tomato book kardo", "vegetables mangwana hai"
+- track_delivery: "order track karna hai", "delivery status", "mera order kaha hai"
+- change_cancel_order: "order cancel karna hai", "order change karna hai"
+- register_customer: "account banana hai", "registration karna hai", "sign up"
+- faq/help/menu: "help", "menu", "kya kar sakte ho", "options"
+- thanks: "thank you", "thanks", "dhanyawad"
+- goodbye: "bye", "goodbye", "alvida"
+- small_talk: casual conversations, jokes
+*/
+
 async function handleIntent(intent, entities, msg = null) {
     switch (intent) {
         case "greeting":

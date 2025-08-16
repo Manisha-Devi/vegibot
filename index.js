@@ -64,13 +64,45 @@ client.on("message", async (msg) => {
         console.log("👉 Intent:", intent, "Confidence:", confidence);
         console.log("👉 Entities:", entities);
 
-        // If confidence is too low, ask for clarification
-        if (confidence < 0.5 && intent !== "unknown") {
-            const clarificationMsg = "🤔 मुझे आपका message पूरी तरह समझ नहीं आया। क्या आप थोड़ा और clear में बता सकते हैं?";
-            return client.sendMessage(msg.from, clarificationMsg);
+        // Intent detection with fallback logic
+        let finalIntent = intent;
+        
+        // Keyword-based fallback for low confidence
+        if (confidence < 0.7) {
+            const msgLower = msg.body.toLowerCase();
+            
+            // Greeting keywords
+            if (msgLower.match(/\b(hello|hi|hey|namaste|good morning|good evening)\b/i)) {
+                finalIntent = "greeting";
+            }
+            // Vegetable inquiry keywords
+            else if (msgLower.match(/\b(available|price|milega|kitna|rate)\b/i) && 
+                     msgLower.match(/\b(tomato|onion|potato|vegetable|sabzi)\b/i)) {
+                finalIntent = "vegetable_inquiry";
+            }
+            // Order keywords
+            else if (msgLower.match(/\b(order|book|mangwana|chahiye)\b/i) && 
+                     msgLower.match(/\b(kg|kilo|grams)\b/i)) {
+                finalIntent = "place_order";
+            }
+            // Track keywords
+            else if (msgLower.match(/\b(track|status|kaha|delivery)\b/i)) {
+                finalIntent = "track_delivery";
+            }
+            // Help keywords
+            else if (msgLower.match(/\b(help|menu|options|kya kar sakte)\b/i)) {
+                finalIntent = "help";
+            }
+            // If still low confidence, ask for clarification
+            else if (confidence < 0.5) {
+                const clarificationMsg = "🤔 मुझे आपका message पूरी तरह समझ नहीं आया। क्या आप थोड़ा और clear में बता सकते हैं?\n\nExample:\n• 'Tomato available hai?'\n• '2 kg onion order करना है'\n• 'Help' या 'Menu'";
+                return client.sendMessage(msg.from, clarificationMsg);
+            }
         }
+        
+        console.log(`👉 Final Intent: ${finalIntent} (Original: ${intent}, Confidence: ${confidence})`);
 
-        const reply = await handleIntent(intent, entities, msg);
+        const reply = await handleIntent(finalIntent, entities, msg);
         
         // Clear typing and send reply
         await msg.getChat().then(chat => chat.clearState());
