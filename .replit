@@ -2,3 +2,24 @@ modules = ["nodejs-20"]
 
 [nix]
 channel = "stable-25_05"
+
+[workflows]
+runButton = "Start WhatsApp Bot"
+
+[[workflows.workflow]]
+name = "Start WhatsApp Bot"
+author = 46485335
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
+
+[[workflows.workflow]]
+name = "Start WhatsApp Bot"
+author = 46485335
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
