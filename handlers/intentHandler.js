@@ -90,17 +90,17 @@ async function handleIntent(intent, entities, msg = null) {
             
             if (!global.userRegistrationState[userId]) {
                 global.userRegistrationState[userId] = {
-                    step: 'name',
+                    step: 'collecting',
                     data: {}
                 };
-                return "🆕 Account banana shuru karte hain! 😊\n\n📝 **Step 1:** Pehle aapka **Full Name** bataiye\n\nExample: 'Mera naam Rahul Kumar hai' ya sirf 'Rahul Kumar'";
             }
             
-            return handleRegistrationFlow(userId, msg.body, entities);
+            // Try to extract all possible data from first message
+            return handleFlexibleRegistration(userId, msg.body, entities);
 
         case "registration_data":
             const userId2 = msg?.from || 'unknown';
-            return handleRegistrationFlow(userId2, msg.body, entities);
+            return handleFlexibleRegistration(userId2, msg.body, entities);
 
         case "thanks":
             const thanksReplies = [
@@ -130,90 +130,109 @@ async function handleIntent(intent, entities, msg = null) {
     }
 }
 
-// Registration flow handler
-function handleRegistrationFlow(userId, message, entities) {
+// Flexible Registration Handler - Can handle multiple data at once
+function handleFlexibleRegistration(userId, message, entities) {
     if (!global.userRegistrationState) {
         global.userRegistrationState = {};
     }
     
     if (!global.userRegistrationState[userId]) {
         global.userRegistrationState[userId] = {
-            step: 'name',
+            step: 'collecting',
             data: {}
         };
     }
     
     const state = global.userRegistrationState[userId];
     
-    switch (state.step) {
-        case 'name':
-            // Extract name from entities or message
-            let name = entities["person_name:person_name"]?.[0]?.body || 
-                      entities["wit$contact:contact"]?.[0]?.body || 
-                      extractNameFromMessage(message);
-            
-            if (name) {
-                state.data.name = name;
-                state.step = 'gender';
-                return `✅ Name save ho gaya: **${name}**\n\n👤 **Step 2:** Gender bataiye\n\nExample: 'Male', 'Female' ya 'Other'`;
-            } else {
-                return "🤔 Name clear nahi mila. Please clearly bataiye:\n\nExample:\n• 'Mera naam Priya Sharma hai'\n• 'Rohit Singh'\n• 'My name is Amit'";
-            }
-            
-        case 'gender':
-            let gender = extractGenderFromMessage(message);
-            if (gender) {
-                state.data.gender = gender;
-                state.step = 'age';
-                return `✅ Gender save: **${gender}**\n\n🎂 **Step 3:** Aapki age kya hai?\n\nExample: '25 years', '30 saal', ya sirf '28'`;
-            } else {
-                return "🤔 Gender clear nahi mila. Please bataiye:\n\n• 'Male' ya 'M'\n• 'Female' ya 'F'\n• 'Other'";
-            }
-            
-        case 'age':
-            let age = entities["wit$age_of_person:age_of_person"]?.[0]?.value || 
+    // Extract all possible data from current message using Wit.ai entities
+    const extractedData = extractAllRegistrationData(message, entities);
+    
+    // Merge extracted data with existing data
+    Object.keys(extractedData).forEach(key => {
+        if (extractedData[key] && !state.data[key]) {
+            state.data[key] = extractedData[key];
+        }
+    });
+    
+    // Check what data is still missing
+    const requiredFields = ['name', 'gender', 'age', 'mobile', 'address'];
+    const missingFields = requiredFields.filter(field => !state.data[field]);
+    
+    // If all data is complete
+    if (missingFields.length === 0) {
+        const userData = state.data;
+        delete global.userRegistrationState[userId]; // Clear state
+        
+        return `🎉 **Registration Complete!** 🎉\n\n📝 **Aapka Account Details:**\n\n👤 Name: ${userData.name}\n🚻 Gender: ${userData.gender}\n🎂 Age: ${userData.age} years\n📱 Mobile: ${userData.mobile}\n🏠 Address: ${userData.address}\n\n✅ Account successfully create ho gaya!\n🆔 Customer ID: CUST${Math.floor(Math.random() * 100000)}\n\n🛒 Ab aap vegetables order kar sakte hain!\nType 'Menu' to start shopping! 😊`;
+    }
+    
+    // Show what we got and ask for remaining
+    let response = "📝 **Registration Progress:**\n\n";
+    
+    // Show received data
+    if (state.data.name) response += `✅ Name: ${state.data.name}\n`;
+    if (state.data.gender) response += `✅ Gender: ${state.data.gender}\n`;
+    if (state.data.age) response += `✅ Age: ${state.data.age} years\n`;
+    if (state.data.mobile) response += `✅ Mobile: ${state.data.mobile}\n`;
+    if (state.data.address) response += `✅ Address: ${state.data.address}\n`;
+    
+    response += "\n🔍 **Still needed:**\n";
+    
+    // Ask for missing fields
+    const fieldNames = {
+        'name': 'Full Name',
+        'gender': 'Gender (Male/Female/Other)',
+        'age': 'Age',
+        'mobile': 'Mobile Number',
+        'address': 'Complete Address'
+    };
+    
+    missingFields.forEach(field => {
+        response += `❌ ${fieldNames[field]}\n`;
+    });
+    
+    response += "\n💡 **Aap ye kar sakte hain:**\n";
+    response += "• Ek saath sab details bhej sakte hain\n";
+    response += "• Ya step by step bhi de sakte hain\n\n";
+    response += "**Example:**\n";
+    response += "'Mera naam Rohit Kumar hai, male hun, 28 years old, mobile 9876543210'\n\n";
+    response += "Ya sirf jo missing hai woh send karo! 😊";
+    
+    return response;
+}
+
+// Extract all possible registration data from message and entities
+function extractAllRegistrationData(message, entities) {
+    const data = {};
+    
+    // Extract Name
+    data.name = entities["person_name:person_name"]?.[0]?.body || 
+                entities["wit$contact:contact"]?.[0]?.body || 
+                extractNameFromMessage(message);
+    
+    // Extract Gender
+    data.gender = extractGenderFromMessage(message);
+    
+    // Extract Age
+    const ageValue = entities["wit$age_of_person:age_of_person"]?.[0]?.value || 
                      entities["wit$number:number"]?.[0]?.value || 
                      extractNumberFromMessage(message);
-            
-            if (age && age > 0 && age < 150) {
-                state.data.age = age;
-                state.step = 'mobile';
-                return `✅ Age save: **${age} years**\n\n📱 **Step 4:** Mobile number share karo\n\nExample: '9876543210' ya '+91 9876543210'`;
-            } else {
-                return "🤔 Valid age nahi mili. Please bataiye:\n\nExample:\n• '25 years old'\n• '30 saal'\n• '28'";
-            }
-            
-        case 'mobile':
-            let mobile = entities["wit$phone_number:phone_number"]?.[0]?.value || 
-                        extractMobileFromMessage(message);
-            
-            if (mobile && mobile.length >= 10) {
-                state.data.mobile = mobile;
-                state.step = 'address';
-                return `✅ Mobile save: **${mobile}**\n\n🏠 **Step 5:** Complete address bataiye\n\nExample: 'H-123, Sector 15, Gurgaon, Haryana, 122001'`;
-            } else {
-                return "🤔 Valid mobile number nahi mila. Please share karo:\n\nExample:\n• '9876543210'\n• '+91 9876543210'\n• '91-9876543210'";
-            }
-            
-        case 'address':
-            let address = message.trim();
-            if (address.length > 10) {
-                state.data.address = address;
-                state.step = 'complete';
-                
-                // Registration complete
-                const userData = state.data;
-                delete global.userRegistrationState[userId]; // Clear state
-                
-                return `🎉 **Registration Complete!** 🎉\n\n📝 **Aapka Account Details:**\n\n👤 Name: ${userData.name}\n🚻 Gender: ${userData.gender}\n🎂 Age: ${userData.age} years\n📱 Mobile: ${userData.mobile}\n🏠 Address: ${userData.address}\n\n✅ Account successfully create ho gaya!\n🆔 Customer ID: CUST${Math.floor(Math.random() * 100000)}\n\n🛒 Ab aap vegetables order kar sakte hain!\nType 'Menu' to start shopping! 😊`;
-            } else {
-                return "🤔 Address complete nahi laga. Please detailed address share karo:\n\nExample:\n• 'H-123, Sector 15, Gurgaon, Haryana, 122001'\n• 'Flat 4B, Green Valley Apartments, Mumbai-400001'";
-            }
-            
-        default:
-            delete global.userRegistrationState[userId];
-            return "🔄 Kuch error hui. Registration restart karte hain!\nType 'Register' to begin again.";
+    if (ageValue && ageValue > 0 && ageValue < 150) {
+        data.age = ageValue;
     }
+    
+    // Extract Mobile
+    data.mobile = entities["wit$phone_number:phone_number"]?.[0]?.value || 
+                  extractMobileFromMessage(message);
+    
+    // Extract Address (if message seems like address)
+    const addressFromMessage = extractAddressFromMessage(message);
+    if (addressFromMessage) {
+        data.address = addressFromMessage;
+    }
+    
+    return data;
 }
 
 // Helper functions
@@ -253,6 +272,24 @@ function extractMobileFromMessage(message) {
     const mobilePattern = /(?:\+91\s?)?(?:91\s?)?[6-9]\d{9}/;
     const match = message.match(mobilePattern);
     return match ? match[0].replace(/\s/g, '') : null;
+}
+
+function extractAddressFromMessage(message) {
+    const cleanMsg = message.trim();
+    
+    // Look for address indicators
+    const addressKeywords = ['address', 'ghar', 'house', 'flat', 'apartment', 'sector', 'colony', 'street', 'road', 'pincode', 'pin'];
+    const hasAddressKeyword = addressKeywords.some(keyword => 
+        cleanMsg.toLowerCase().includes(keyword)
+    );
+    
+    // If message is long and has address-like patterns or keywords
+    if ((cleanMsg.length > 20 && hasAddressKeyword) || 
+        (cleanMsg.length > 50 && /\d{6}/.test(cleanMsg))) { // Contains 6-digit pincode
+        return cleanMsg;
+    }
+    
+    return null;
 }
 
 module.exports = handleIntent;
