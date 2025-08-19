@@ -1,6 +1,7 @@
 
 // handlers/intentHandler.js
 // const callN8n = require("../services/n8nService"); // Temporarily disabled
+const { updateRegistrationData, getRegistrationData, clearUserSession } = require("../utils/userSessions");
 
 // Intent Examples for better understanding:
 /*
@@ -81,6 +82,9 @@ async function handleIntent(intent, entities, msg = null) {
             return cancelReplies[Math.floor(Math.random() * cancelReplies.length)];
 
         case "register_customer":
+            // Get user ID from message
+            const userId = msg ? msg.from : 'default_user';
+            
             // Extract registration details from entities
             const customerName = entities["customer_name:customer_name"]?.[0]?.value;
             const customerPhone = entities["customer_phone:customer_phone"]?.[0]?.value;
@@ -88,27 +92,41 @@ async function handleIntent(intent, entities, msg = null) {
             const customerGender = entities["customer_gender:customer_gender"]?.[0]?.value;
             const customerAge = entities["customer_age:customer_age"]?.[0]?.value;
             
+            // Update session with new data
+            const newData = {};
+            if (customerName) newData.name = customerName;
+            if (customerPhone) newData.phone = customerPhone;
+            if (customerAddress) newData.address = customerAddress;
+            if (customerGender) newData.gender = customerGender;
+            if (customerAge) newData.age = customerAge;
+            
+            // Update user session
+            const registrationData = updateRegistrationData(userId, newData);
+            
             // Check if we have all required details
-            const hasName = customerName && customerName.trim().length > 0;
-            const hasPhone = customerPhone && customerPhone.trim().length > 0;
-            const hasAddress = customerAddress && customerAddress.trim().length > 0;
-            const hasAge = customerAge && customerAge.trim().length > 0;
+            const hasName = registrationData.name && registrationData.name.trim().length > 0;
+            const hasPhone = registrationData.phone && registrationData.phone.trim().length > 0;
+            const hasAddress = registrationData.address && registrationData.address.trim().length > 0;
+            const hasAge = registrationData.age && registrationData.age.trim().length > 0;
             
             // If all required details are present, complete registration
             if (hasName && hasPhone && hasAddress && hasAge) {
-                let registrationSuccess = `🎉 Registration Successful! Welcome ${customerName}!\n\n`;
+                let registrationSuccess = `🎉 Registration Successful! Welcome ${registrationData.name}!\n\n`;
                 registrationSuccess += `✅ Registration Details:\n`;
-                registrationSuccess += `✓ Full name: ${customerName}\n`;
-                if (customerAge) {
-                    registrationSuccess += `✓ Age: ${customerAge} years\n`;
+                registrationSuccess += `✓ Full name: ${registrationData.name}\n`;
+                if (registrationData.age) {
+                    registrationSuccess += `✓ Age: ${registrationData.age} years\n`;
                 }
-                if (customerGender) {
-                    registrationSuccess += `✓ Gender: ${customerGender}\n`;
+                if (registrationData.gender) {
+                    registrationSuccess += `✓ Gender: ${registrationData.gender}\n`;
                 }
-                registrationSuccess += `✓ Phone number: ${customerPhone}\n`;
-                registrationSuccess += `✓ Delivery address: ${customerAddress}\n\n`;
+                registrationSuccess += `✓ Phone number: ${registrationData.phone}\n`;
+                registrationSuccess += `✓ Delivery address: ${registrationData.address}\n\n`;
                 registrationSuccess += `🥬 Account ready hai! Ab vegetables order kar sakte hain!\n`;
                 registrationSuccess += `Type "Menu" to see available options 😊`;
+                
+                // Clear session after successful registration
+                clearUserSession(userId);
                 
                 return registrationSuccess;
             } 
@@ -117,13 +135,13 @@ async function handleIntent(intent, entities, msg = null) {
                 let partialRegistration = `📝 Registration in progress...\n\n`;
                 
                 // Show what we have
-                if (hasName || hasPhone || hasAddress || customerGender || hasAge) {
+                if (hasName || hasPhone || hasAddress || registrationData.gender || hasAge) {
                     partialRegistration += `✅ Received Details:\n`;
-                    if (hasName) partialRegistration += `✓ Full name: ${customerName}\n`;
-                    if (hasAge) partialRegistration += `✓ Age: ${customerAge} years\n`;
-                    if (customerGender) partialRegistration += `✓ Gender: ${customerGender}\n`;
-                    if (hasPhone) partialRegistration += `✓ Phone number: ${customerPhone}\n`;
-                    if (hasAddress) partialRegistration += `✓ Delivery address: ${customerAddress}\n`;
+                    if (hasName) partialRegistration += `✓ Full name: ${registrationData.name}\n`;
+                    if (hasAge) partialRegistration += `✓ Age: ${registrationData.age} years\n`;
+                    if (registrationData.gender) partialRegistration += `✓ Gender: ${registrationData.gender}\n`;
+                    if (hasPhone) partialRegistration += `✓ Phone number: ${registrationData.phone}\n`;
+                    if (hasAddress) partialRegistration += `✓ Delivery address: ${registrationData.address}\n`;
                     partialRegistration += `\n`;
                 }
                 

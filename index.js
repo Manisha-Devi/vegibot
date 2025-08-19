@@ -4,6 +4,7 @@ const qrcode = require("qrcode-terminal");
 
 const witAiMessage = require("./config/wit");
 const handleIntent = require("./handlers/intentHandler");
+const { cleanOldSessions } = require("./utils/userSessions");
 
 const client = new Client({ 
     authStrategy: new LocalAuth(),
