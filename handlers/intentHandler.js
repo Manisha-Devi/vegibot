@@ -86,6 +86,7 @@ async function handleIntent(intent, entities, msg = null) {
             const customerPhone = entities["customer_phone:customer_phone"]?.[0]?.value;
             const customerAddress = entities["customer_address:customer_address"]?.[0]?.value;
             const customerGender = entities["customer_gender:customer_gender"]?.[0]?.value;
+            const customerAge = entities["customer_age:customer_age"]?.[0]?.value;
             
             // Check if we have all required details
             const hasName = customerName && customerName.trim().length > 0;
@@ -97,6 +98,9 @@ async function handleIntent(intent, entities, msg = null) {
                 let registrationSuccess = `🎉 Registration Successful! Welcome ${customerName}!\n\n`;
                 registrationSuccess += `✅ Registration Details:\n`;
                 registrationSuccess += `✓ Full name: ${customerName}\n`;
+                if (customerAge) {
+                    registrationSuccess += `✓ Age: ${customerAge} years\n`;
+                }
                 if (customerGender) {
                     registrationSuccess += `✓ Gender: ${customerGender}\n`;
                 }
@@ -112,9 +116,10 @@ async function handleIntent(intent, entities, msg = null) {
                 let partialRegistration = `📝 Registration in progress...\n\n`;
                 
                 // Show what we have
-                if (hasName || hasPhone || hasAddress || customerGender) {
+                if (hasName || hasPhone || hasAddress || customerGender || customerAge) {
                     partialRegistration += `✅ Received Details:\n`;
                     if (hasName) partialRegistration += `✓ Full name: ${customerName}\n`;
+                    if (customerAge) partialRegistration += `✓ Age: ${customerAge} years\n`;
                     if (customerGender) partialRegistration += `✓ Gender: ${customerGender}\n`;
                     if (hasPhone) partialRegistration += `✓ Phone number: ${customerPhone}\n`;
                     if (hasAddress) partialRegistration += `✓ Delivery address: ${customerAddress}\n`;
@@ -134,8 +139,8 @@ async function handleIntent(intent, entities, msg = null) {
             
             // Fallback if no entities detected
             const registrationReplies = [
-                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Mobile number\n3. Complete address\n4. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
-                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
+                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Age (optional)\n3. Gender (optional)\n4. Mobile number\n5. Complete address\n6. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
+                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Age (optional)\n✓ Gender (optional)\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
             ];
             return registrationReplies[Math.floor(Math.random() * registrationReplies.length)];
 
