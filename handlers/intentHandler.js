@@ -146,10 +146,11 @@ async function handleIntent(intent, entities, msg = null) {
                 partialRegistration += `❌ Still needed:\n`;
                 if (!hasName) partialRegistration += `✗ Full name\n`;
                 if (!hasAge) partialRegistration += `✗ Age\n`;
+                if (!hasGender) partialRegistration += `✗ Gender\n`;
                 if (!hasPhone) partialRegistration += `✗ Phone number\n`;
                 if (!hasAddress) partialRegistration += `✗ Delivery address\n`;
                 
-                partialRegistration += `\nPlease provide missing details to complete registration! 😊`;
+                partialRegistration += `\nMissing details provide karwa doh Registration Complete karna ka leya! 😊`;
                 
                 return partialRegistration;
             }
