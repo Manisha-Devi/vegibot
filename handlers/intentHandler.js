@@ -108,18 +108,15 @@ async function handleIntent(intent, entities, msg = null) {
             const hasPhone = registrationData.phone && registrationData.phone.trim().length > 0;
             const hasAddress = registrationData.address && registrationData.address.trim().length > 0;
             const hasAge = registrationData.age && registrationData.age.trim().length > 0;
-            
+            const hasGender = registrationData.gender && registrationData.gender.trim().length > 0;
+
             // If all required details are present, complete registration
-            if (hasName && hasPhone && hasAddress && hasAge) {
+            if (hasName && hasPhone && hasAddress && hasAge && hasGender) {
                 let registrationSuccess = `🎉 Registration Successful! Welcome ${registrationData.name}!\n\n`;
                 registrationSuccess += `✅ Registration Details:\n`;
                 registrationSuccess += `✓ Full name: ${registrationData.name}\n`;
-                if (registrationData.age) {
-                    registrationSuccess += `✓ Age: ${registrationData.age} years\n`;
-                }
-                if (registrationData.gender) {
-                    registrationSuccess += `✓ Gender: ${registrationData.gender}\n`;
-                }
+                registrationSuccess += `✓ Age: ${registrationData.age} years\n`;
+                registrationSuccess += `✓ Gender: ${registrationData.gender}\n`;
                 registrationSuccess += `✓ Phone number: ${registrationData.phone}\n`;
                 registrationSuccess += `✓ Delivery address: ${registrationData.address}\n\n`;
                 registrationSuccess += `🥬 Account ready hai! Ab vegetables order kar sakte hain!\n`;
@@ -135,11 +132,11 @@ async function handleIntent(intent, entities, msg = null) {
                 let partialRegistration = `📝 Registration in progress...\n\n`;
                 
                 // Show what we have
-                if (hasName || hasPhone || hasAddress || registrationData.gender || hasAge) {
+                if (hasName || hasPhone || hasAddress || hasGender || hasAge) {
                     partialRegistration += `✅ Received Details:\n`;
                     if (hasName) partialRegistration += `✓ Full name: ${registrationData.name}\n`;
                     if (hasAge) partialRegistration += `✓ Age: ${registrationData.age} years\n`;
-                    if (registrationData.gender) partialRegistration += `✓ Gender: ${registrationData.gender}\n`;
+                    if (hasGender) partialRegistration += `✓ Gender: ${registrationData.gender}\n`;
                     if (hasPhone) partialRegistration += `✓ Phone number: ${registrationData.phone}\n`;
                     if (hasAddress) partialRegistration += `✓ Delivery address: ${registrationData.address}\n`;
                     partialRegistration += `\n`;

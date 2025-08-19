@@ -40,6 +40,7 @@ function updateRegistrationData(userId, data) {
     session.registration.isComplete = !!(
         session.registration.name &&
         session.registration.age &&
+        session.registration.gender &&
         session.registration.phone &&
         session.registration.address
     );
