@@ -19,7 +19,7 @@ function doPost(e) {
       ]]);
     }
     
-    // Add customer data to sheet
+    // Add customer data to sheet - Always insert at row 2 (after header)
     const newRow = [
       customerData.user_id,
       customerData.name,
@@ -31,7 +31,9 @@ function doPost(e) {
       customerData.timestamp
     ];
     
-    sheet.appendRow(newRow);
+    // Insert new row at position 2 (pushes existing data down)
+    sheet.insertRowAfter(1); // Insert after row 1 (header)
+    sheet.getRange(2, 1, 1, 8).setValues([newRow]); // Set data in row 2
     
     // Return success response
     return ContentService
