@@ -1,6 +1,6 @@
 
 // handlers/intentHandler.js
-const callN8n = require("../services/n8nService"); // Enable n8n service
+const callAppScript = require("../services/appScriptService"); // Enable Apps Script service
 const { updateRegistrationData, getRegistrationData, clearUserSession } = require("../utils/userSessions");
 
 // Intent Examples for better understanding:
@@ -128,8 +128,8 @@ async function handleIntent(intent, entities, msg = null) {
                         }
                     };
                     
-                    // Call n8n to store in Google Sheets
-                    await callN8n('register_customer', sheetData);
+                    // Call Google Apps Script to store in Google Sheets
+                    await callAppScript('register_customer', sheetData);
                     console.log(`✅ Registration data stored in Google Sheets for user: ${userId}`);
                 } catch (error) {
                     console.error('❌ Error storing registration in Google Sheets:', error);
