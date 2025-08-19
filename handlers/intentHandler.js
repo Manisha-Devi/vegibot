@@ -92,9 +92,10 @@ async function handleIntent(intent, entities, msg = null) {
             const hasName = customerName && customerName.trim().length > 0;
             const hasPhone = customerPhone && customerPhone.trim().length > 0;
             const hasAddress = customerAddress && customerAddress.trim().length > 0;
+            const hasAge = customerAge && customerAge.trim().length > 0;
             
             // If all required details are present, complete registration
-            if (hasName && hasPhone && hasAddress) {
+            if (hasName && hasPhone && hasAddress && hasAge) {
                 let registrationSuccess = `🎉 Registration Successful! Welcome ${customerName}!\n\n`;
                 registrationSuccess += `✅ Registration Details:\n`;
                 registrationSuccess += `✓ Full name: ${customerName}\n`;
@@ -116,7 +117,7 @@ async function handleIntent(intent, entities, msg = null) {
                 let partialRegistration = `📝 Registration in progress...\n\n`;
                 
                 // Show what we have
-                if (hasName || hasPhone || hasAddress || customerGender || customerAge) {
+                if (hasName || hasPhone || hasAddress || customerGender || hasAge) {
                     partialRegistration += `✅ Received Details:\n`;
                     if (hasName) partialRegistration += `✓ Full name: ${customerName}\n`;
                     if (customerAge) partialRegistration += `✓ Age: ${customerAge} years\n`;
@@ -129,6 +130,7 @@ async function handleIntent(intent, entities, msg = null) {
                 // Show what's still needed
                 partialRegistration += `❌ Still needed:\n`;
                 if (!hasName) partialRegistration += `✗ Full name\n`;
+                if (!hasAge) partialRegistration += `✗ Age\n`;
                 if (!hasPhone) partialRegistration += `✗ Phone number\n`;
                 if (!hasAddress) partialRegistration += `✗ Delivery address\n`;
                 
@@ -139,8 +141,8 @@ async function handleIntent(intent, entities, msg = null) {
             
             // Fallback if no entities detected
             const registrationReplies = [
-                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Age (optional)\n3. Gender (optional)\n4. Mobile number\n5. Complete address\n6. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
-                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Age (optional)\n✓ Gender (optional)\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
+                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Age (compulsory)\n3. Gender (optional)\n4. Mobile number\n5. Complete address\n6. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
+                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Age (required)\n✓ Gender (optional)\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
             ];
             return registrationReplies[Math.floor(Math.random() * registrationReplies.length)];
 
