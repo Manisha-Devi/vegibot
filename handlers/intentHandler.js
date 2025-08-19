@@ -1,3 +1,4 @@
+
 // handlers/intentHandler.js
 // const callN8n = require("../services/n8nService"); // Temporarily disabled
 
@@ -68,7 +69,7 @@ async function handleIntent(intent, entities, msg = null) {
             let orderId = entities["order_id:order_id"]?.[0]?.body || "your order";
             const trackingReplies = [
                 `📦 ${orderId} ka status:\n\n✅ Order confirmed\n🚚 Out for delivery\n⏰ Expected: 30-45 minutes\n\nDelivery boy contact: 9876543210`,
-                `🔍 ${orderId} checking...\n\n📍 Status: On the way\n🕐 ETA: 1 hour\n👨‍ সমন্ব delivery partner: Rahul\n\nTrack kar sakte hain live!`,
+                `🔍 ${orderId} checking...\n\n📍 Status: On the way\n🕐 ETA: 1 hour\n👨‍🚚 Delivery partner: Rahul\n\nTrack kar sakte hain live!`,
             ];
             return trackingReplies[Math.floor(Math.random() * trackingReplies.length)];
 
@@ -80,26 +81,11 @@ async function handleIntent(intent, entities, msg = null) {
             return cancelReplies[Math.floor(Math.random() * cancelReplies.length)];
 
         case "register_customer":
-            // Initialize registration state if not exists
-            if (!global.userRegistrationState) {
-                global.userRegistrationState = {};
-            }
-
-            const userId = msg?.from || 'unknown';
-
-            if (!global.userRegistrationState[userId]) {
-                global.userRegistrationState[userId] = {
-                    step: 'collecting',
-                    data: {}
-                };
-            }
-
-            // Try to extract all possible data from first message
-            return handleFlexibleRegistration(userId, msg.body, entities);
-
-        case "registration_data":
-            const userId2 = msg?.from || 'unknown';
-            return handleFlexibleRegistration(userId2, msg.body, entities);
+            const registrationReplies = [
+                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Mobile number\n3. Complete address\n4. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
+                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
+            ];
+            return registrationReplies[Math.floor(Math.random() * registrationReplies.length)];
 
         case "thanks":
             const thanksReplies = [
@@ -127,250 +113,6 @@ async function handleIntent(intent, entities, msg = null) {
             ];
             return defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
     }
-}
-
-// Flexible Registration Handler - Improved with better UX and validation
-function handleFlexibleRegistration(userId, message, entities) {
-    if (!global.userRegistrationState) {
-        global.userRegistrationState = {};
-    }
-
-    if (!global.userRegistrationState[userId]) {
-        global.userRegistrationState[userId] = {
-            step: 'collecting',
-            data: {},
-            attempts: 0
-        };
-    }
-
-    const state = global.userRegistrationState[userId];
-    state.attempts += 1;
-
-    // Extract all possible data from current message
-    const extractedData = extractAllRegistrationData(message, entities);
-
-    // Track what was updated in this message
-    const updatedFields = [];
-    const newFields = [];
-
-    // Merge extracted data with existing data (allow updates)
-    Object.keys(extractedData).forEach(key => {
-        if (extractedData[key]) {
-            if (state.data[key]) {
-                // Field was updated
-                updatedFields.push(key);
-                state.data[key] = extractedData[key];
-            } else {
-                // New field added
-                newFields.push(key);
-                state.data[key] = extractedData[key];
-            }
-        }
-    });
-
-    // Check what data is still missing
-    const requiredFields = ['name', 'gender', 'age', 'mobile', 'address'];
-    const missingFields = requiredFields.filter(field => !state.data[field]);
-
-    // Validate extracted data
-    const validationWarnings = validateRegistrationData(state.data);
-
-    // If all data is complete and valid
-    if (missingFields.length === 0 && validationWarnings.length === 0) {
-        const userData = state.data;
-        delete global.userRegistrationState[userId]; // Clear state
-
-        return `🎉 **Registration Complete!** 🎉\n\n📝 **Aapka Account Details:**\n\n✅ Name: ${userData.name}\n✅ Gender: ${userData.gender}\n✅ Age: ${userData.age} years\n✅ Mobile: ${userData.mobile}\n✅ Address: ${userData.address}\n\n🆔 Customer ID: CUST${Math.floor(Math.random() * 100000)}\n\n🛒 Ab aap vegetables order kar sakte hain!\nType 'Menu' to start shopping! 😊`;
-    }
-
-    // Build response with icons and updates
-    let response = "📝 **Registration Progress:**\n\n";
-
-    // Show what was updated/added in this message
-    if (updatedFields.length > 0) {
-        response += "🔄 **Updated:**\n";
-        updatedFields.forEach(field => {
-            response += `✅ ${getFieldDisplayName(field)}: ${state.data[field]}\n`;
-        });
-        response += "\n";
-    }
-
-    if (newFields.length > 0) {
-        response += "✨ **Added:**\n";
-        newFields.forEach(field => {
-            response += `✅ ${getFieldDisplayName(field)}: ${state.data[field]}\n`;
-        });
-        response += "\n";
-    }
-
-    // Show all current data with icons
-    response += "📊 **Current Status:**\n";
-    requiredFields.forEach(field => {
-        if (state.data[field]) {
-            response += `✅ ${getFieldDisplayName(field)}: ${state.data[field]}\n`;
-        } else {
-            response += `❌ ${getFieldDisplayName(field)}: *Required*\n`;
-        }
-    });
-
-    // Show validation warnings
-    if (validationWarnings.length > 0) {
-        response += "\n⚠️ **Warnings:**\n";
-        validationWarnings.forEach(warning => {
-            response += `🚨 ${warning}\n`;
-        });
-    }
-
-    // Show missing fields if any
-    if (missingFields.length > 0) {
-        response += "\n❗ **Missing Required Fields:**\n";
-        missingFields.forEach(field => {
-            response += `❌ ${getFieldDisplayName(field)}\n`;
-        });
-
-        response += "\n💡 **Next Steps:**\n";
-
-        // Provide specific examples based on missing fields
-        if (missingFields.includes('name')) {
-            response += "• Name: 'Mera naam Rohit Kumar hai'\n";
-        }
-        if (missingFields.includes('mobile')) {
-            response += "• Mobile: '9876543210'\n";
-        }
-        if (missingFields.includes('address')) {
-            response += "• Address: 'Sector 15, Noida, UP 201301'\n";
-        }
-        if (missingFields.includes('age')) {
-            response += "• Age: '25 years old'\n";
-        }
-        if (missingFields.includes('gender')) {
-            response += "• Gender: 'Male' ya 'Female'\n";
-        }
-    }
-
-    // Help message based on attempts
-    if (state.attempts > 3 && missingFields.length > 0) {
-        response += "\n🤔 **Having trouble?**\n";
-        response += "• Ek saath sab details bhej sakte hain\n";
-        response += "• Ya 'help' type karo detailed guidance ke liye\n";
-        response += "• Example: 'Rohit, male, 28, 9876543210, Noida'\n";
-    }
-
-    response += "\n📝 Type any missing info to continue! 😊";
-
-    return response;
-}
-
-// Helper function to get field display names
-function getFieldDisplayName(field) {
-    const fieldNames = {
-        'name': 'Full Name',
-        'gender': 'Gender',
-        'age': 'Age',
-        'mobile': 'Mobile Number',
-        'address': 'Address'
-    };
-    return fieldNames[field] || field;
-}
-
-// Validation function for registration data
-function validateRegistrationData(data) {
-    const warnings = [];
-
-    // Validate mobile number
-    if (data.mobile) {
-        const cleanMobile = data.mobile.replace(/\s/g, '');
-        if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
-            warnings.push("Mobile number should be 10 digits starting with 6-9");
-        }
-    }
-
-    // Validate age
-    if (data.age) {
-        const age = parseInt(data.age);
-        if (age < 18 || age > 100) {
-            warnings.push("Age should be between 18-100 years");
-        }
-    }
-
-    // Validate name
-    if (data.name) {
-        if (data.name.length < 2) {
-            warnings.push("Name should be at least 2 characters");
-        }
-        if (!/^[a-zA-Z\s]+$/.test(data.name)) {
-            warnings.push("Name should contain only letters and spaces");
-        }
-    }
-
-    // Validate gender
-    if (data.gender) {
-        const validGenders = ['male', 'female', 'other'];
-        if (!validGenders.includes(data.gender.toLowerCase())) {
-            warnings.push("Gender should be Male, Female, or Other");
-        }
-    }
-
-    // Validate address
-    if (data.address) {
-        if (data.address.length < 10) {
-            warnings.push("Address seems too short, please provide complete address");
-        }
-    }
-
-    return warnings;
-}
-
-function extractAllRegistrationData(message, entities) {
-    const data = {};
-
-    // Debug logging - ye console mein dikhega ki Wit.ai se kya mil raha hai
-    console.log("🔍 DEBUG - Wit.ai Entities:", JSON.stringify(entities, null, 2));
-    console.log("🔍 DEBUG - Original Message:", message);
-
-    // Extract Name - ONLY from Wit.ai entities
-    data.name = entities["person_name:person_name"]?.[0]?.body || 
-                entities["wit$contact:contact"]?.[0]?.body || 
-                entities["wit$person:person"]?.[0]?.body;
-
-    if (data.name) {
-        console.log("✅ Name extracted from Wit.ai:", data.name);
-    }
-
-    // Extract Gender - ONLY from Wit.ai entities
-    const genderEntity = entities["gender:gender"]?.[0]?.body || 
-                        entities["wit$gender:gender"]?.[0]?.body;
-    if (genderEntity) {
-        data.gender = genderEntity;
-        console.log("✅ Gender extracted from Wit.ai:", data.gender);
-    }
-
-    // Extract Age - ONLY from Wit.ai entities
-    const ageValue = entities["wit$age_of_person:age_of_person"]?.[0]?.value || 
-                     entities["wit$number:number"]?.[0]?.value;
-
-    if (ageValue && ageValue > 0 && ageValue < 150) {
-        data.age = ageValue;
-        console.log("✅ Age extracted from Wit.ai:", data.age);
-    }
-
-    // Extract Mobile - ONLY from Wit.ai entities
-    data.mobile = entities["wit$phone_number:phone_number"]?.[0]?.value;
-
-    if (data.mobile) {
-        console.log("✅ Mobile extracted from Wit.ai:", data.mobile);
-    }
-
-    // Extract Address - ONLY from Wit.ai entities
-    const addressEntity = entities["address:address"]?.[0]?.body || 
-                         entities["wit$location:location"]?.[0]?.body;
-    if (addressEntity) {
-        data.address = addressEntity;
-        console.log("✅ Address extracted from Wit.ai:", data.address);
-    }
-
-    console.log("📊 Final extracted data (Wit.ai only):", data);
-    return data;
 }
 
 module.exports = handleIntent;
