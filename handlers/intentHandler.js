@@ -21,16 +21,33 @@ INTENT TRIGGER EXAMPLES:
 async function handleIntent(intent, entities, msg = null) {
     switch (intent) {
         case "greeting":
-            // Multiple friendly greetings in Roman Hindi + English
-            const greetings = [
-                "Hello 👋 Welcome to VegiBot! Main aapki vegetable shopping me help karunga!",
-                "Hi there! 😊 Namaste! Kaise help kar sakta hun aapki?",
-                "Hey 🙌 Great to see you! Bataiye kya vegetables chahiye?",
-                "Hello 👋 Main yahan hu aapki madad ke liye! Fresh vegetables available hain.",
-                "Namaste 🙏 Kaise ho? Fresh sabziyan mangwani hain?",
-                "Hi 😄 VegiBot ready hai! Koi bhi vegetable ke bare me puch sakte hain!"
-            ];
-            return greetings[Math.floor(Math.random() * greetings.length)];
+            // Check if user is already registered
+            const userId = msg ? msg.from : 'default_user';
+            const existingData = getRegistrationData(userId);
+            
+            if (existingData && existingData.name && existingData.isComplete) {
+                // User is already registered - greet with name
+                const personalGreetings = [
+                    `Hello ${existingData.name}! 👋 Kaise hain aap? Kya vegetables chahiye aaj?`,
+                    `Namaste ${existingData.name} ji! 😊 Aaj kya mangwana hai?`,
+                    `Hi ${existingData.name}! 🙌 Fresh sabziyan ready hain, order karna hai?`,
+                    `Hello ${existingData.name}! 👋 VegiBot ready hai aapki service ke liye!`,
+                    `Namaste ${existingData.name} ji! 🙏 Kya vegetables order karni hain?`,
+                    `Hi ${existingData.name}! 😄 Aaj ki shopping list ready hai?`
+                ];
+                return personalGreetings[Math.floor(Math.random() * personalGreetings.length)];
+            } else {
+                // New user - general greeting
+                const greetings = [
+                    "Hello 👋 Welcome to VegiBot! Main aapki vegetable shopping me help karunga!",
+                    "Hi there! 😊 Namaste! Kaise help kar sakta hun aapki?",
+                    "Hey 🙌 Great to see you! Bataiye kya vegetables chahiye?",
+                    "Hello 👋 Main yahan hu aapki madad ke liye! Fresh vegetables available hain.",
+                    "Namaste 🙏 Kaise ho? Fresh sabziyan mangwani hain?",
+                    "Hi 😄 VegiBot ready hai! Koi bhi vegetable ke bare me puch sakte hain!"
+                ];
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            }
 
         case "faq":
         case "help":
@@ -83,7 +100,13 @@ async function handleIntent(intent, entities, msg = null) {
 
         case "register_customer":
             // Get user ID from message
-            const userId = msg ? msg.from : 'default_user';
+            const regUserId = msg ? msg.from : 'default_user';
+            
+            // Check if user is already registered
+            const currentData = getRegistrationData(regUserId);
+            if (currentData && currentData.isComplete) {
+                return `✅ ${currentData.name}, aap already registered hain! 😊\n\n📝 Aapki details:\n✓ Name: ${currentData.name}\n✓ Age: ${currentData.age}\n✓ Gender: ${currentData.gender}\n✓ Phone: ${currentData.phone}\n✓ Address: ${currentData.address}\n\n🥬 Direct vegetables order kar sakte hain!\nType "Menu" for options.`;
+            }
             
             // Extract registration details from entities
             const customerName = entities["customer_name:customer_name"]?.[0]?.value;
@@ -101,7 +124,7 @@ async function handleIntent(intent, entities, msg = null) {
             if (customerAge) newData.age = customerAge;
             
             // Update user session
-            const registrationData = updateRegistrationData(userId, newData);
+            const registrationData = updateRegistrationData(regUserId, newData);
             
             // Check if we have all required details
             const hasName = registrationData.name && registrationData.name.trim().length > 0;
@@ -117,7 +140,7 @@ async function handleIntent(intent, entities, msg = null) {
                     const sheetData = {
                         action: 'store_registration',
                         customer_data: {
-                            user_id: userId,
+                            user_id: regUserId,
                             name: registrationData.name,
                             age: registrationData.age,
                             gender: registrationData.gender,
@@ -130,7 +153,7 @@ async function handleIntent(intent, entities, msg = null) {
                     
                     // Call Google Apps Script to store in Google Sheets
                     await callAppScript('register_customer', sheetData);
-                    console.log(`✅ Registration data stored in Google Sheets for user: ${userId}`);
+                    console.log(`✅ Registration data stored in Google Sheets for user: ${regUserId}`);
                 } catch (error) {
                     console.error('❌ Error storing registration in Google Sheets:', error);
                     // Continue with registration even if sheet storage fails
@@ -147,7 +170,7 @@ async function handleIntent(intent, entities, msg = null) {
                 registrationSuccess += `Type "Menu" to see available options 😊`;
                 
                 // Clear session after successful registration
-                clearUserSession(userId);
+                clearUserSession(regUserId);
                 
                 return registrationSuccess;
             } 
