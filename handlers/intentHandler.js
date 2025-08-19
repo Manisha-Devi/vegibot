@@ -1,6 +1,6 @@
 
 // handlers/intentHandler.js
-const callAppScript = require("../services/appScriptService"); // Enable Apps Script service
+const { callAppScript, checkUserExists } = require("../services/appScriptService"); // Enable Apps Script service
 const { updateRegistrationData, getRegistrationData, clearUserSession } = require("../utils/userSessions");
 
 // Intent Examples for better understanding:
@@ -21,32 +21,39 @@ INTENT TRIGGER EXAMPLES:
 async function handleIntent(intent, entities, msg = null) {
     switch (intent) {
         case "greeting":
-            // Check if user is already registered
+            // Check if user is already registered in Google Sheets
             const userId = msg ? msg.from : 'default_user';
-            const existingData = getRegistrationData(userId);
             
-            if (existingData && existingData.name && existingData.isComplete) {
-                // User is already registered - greet with name
-                const personalGreetings = [
-                    `Hello ${existingData.name}! 👋 Kaise hain aap? Kya vegetables chahiye aaj?`,
-                    `Namaste ${existingData.name} ji! 😊 Aaj kya mangwana hai?`,
-                    `Hi ${existingData.name}! 🙌 Fresh sabziyan ready hain, order karna hai?`,
-                    `Hello ${existingData.name}! 👋 VegiBot ready hai aapki service ke liye!`,
-                    `Namaste ${existingData.name} ji! 🙏 Kya vegetables order karni hain?`,
-                    `Hi ${existingData.name}! 😄 Aaj ki shopping list ready hai?`
-                ];
-                return personalGreetings[Math.floor(Math.random() * personalGreetings.length)];
-            } else {
-                // New user - general greeting
-                const greetings = [
-                    "Hello 👋 Welcome to VegiBot! Main aapki vegetable shopping me help karunga!",
-                    "Hi there! 😊 Namaste! Kaise help kar sakta hun aapki?",
-                    "Hey 🙌 Great to see you! Bataiye kya vegetables chahiye?",
-                    "Hello 👋 Main yahan hu aapki madad ke liye! Fresh vegetables available hain.",
-                    "Namaste 🙏 Kaise ho? Fresh sabziyan mangwani hain?",
-                    "Hi 😄 VegiBot ready hai! Koi bhi vegetable ke bare me puch sakte hain!"
-                ];
-                return greetings[Math.floor(Math.random() * greetings.length)];
+            try {
+                const existingUserData = await checkUserExists(userId);
+                
+                if (existingUserData && existingUserData.name) {
+                    // User is already registered - greet with name
+                    const personalGreetings = [
+                        `Hello ${existingUserData.name}! 👋 Kaise hain aap? Kya vegetables chahiye aaj?`,
+                        `Namaste ${existingUserData.name} ji! 😊 Aaj kya mangwana hai?`,
+                        `Hi ${existingUserData.name}! 🙌 Fresh sabziyan ready hain, order karna hai?`,
+                        `Hello ${existingUserData.name}! 👋 VegiBot ready hai aapki service ke liye!`,
+                        `Namaste ${existingUserData.name} ji! 🙏 Kya vegetables order karni hain?`,
+                        `Hi ${existingUserData.name}! 😄 Aaj ki shopping list ready hai?`
+                    ];
+                    return personalGreetings[Math.floor(Math.random() * personalGreetings.length)];
+                } else {
+                    // New user - general greeting
+                    const greetings = [
+                        "Hello 👋 Welcome to VegiBot! Main aapki vegetable shopping me help karunga!",
+                        "Hi there! 😊 Namaste! Kaise help kar sakta hun aapki?",
+                        "Hey 🙌 Great to see you! Bataiye kya vegetables chahiye?",
+                        "Hello 👋 Main yahan hu aapki madad ke liye! Fresh vegetables available hain.",
+                        "Namaste 🙏 Kaise ho? Fresh sabziyan mangwani hain?",
+                        "Hi 😄 VegiBot ready hai! Koi bhi vegetable ke bare me puch sakte hain!"
+                    ];
+                    return greetings[Math.floor(Math.random() * greetings.length)];
+                }
+            } catch (error) {
+                console.error("Error checking user data:", error);
+                // Fallback to general greeting
+                return "Hello 👋 Welcome to VegiBot! Main aapki vegetable shopping me help karunga!";
             }
 
         case "faq":
@@ -102,10 +109,14 @@ async function handleIntent(intent, entities, msg = null) {
             // Get user ID from message
             const regUserId = msg ? msg.from : 'default_user';
             
-            // Check if user is already registered
-            const currentData = getRegistrationData(regUserId);
-            if (currentData && currentData.isComplete) {
-                return `✅ ${currentData.name}, aap already registered hain! 😊\n\n📝 Aapki details:\n✓ Name: ${currentData.name}\n✓ Age: ${currentData.age}\n✓ Gender: ${currentData.gender}\n✓ Phone: ${currentData.phone}\n✓ Address: ${currentData.address}\n\n🥬 Direct vegetables order kar sakte hain!\nType "Menu" for options.`;
+            // Check if user is already registered in Google Sheets
+            try {
+                const existingRegData = await checkUserExists(regUserId);
+                if (existingRegData && existingRegData.name) {
+                    return `✅ ${existingRegData.name}, aap already registered hain! 😊\n\n📝 Aapki details:\n✓ Name: ${existingRegData.name}\n✓ Age: ${existingRegData.age}\n✓ Gender: ${existingRegData.gender}\n✓ Phone: ${existingRegData.phone}\n✓ Address: ${existingRegData.address}\n\n🥬 Direct vegetables order kar sakte hain!\nType "Menu" for options.`;
+                }
+            } catch (error) {
+                console.error("Error checking existing registration:", error);
             }
             
             // Extract registration details from entities
