@@ -1,6 +1,7 @@
 
 // handlers/intentHandler.js
 // const callN8n = require("../services/n8nService"); // Temporarily disabled
+const userSessions = require("../utils/userSessions");
 
 // Intent Examples for better understanding:
 /*
@@ -17,7 +18,7 @@ INTENT TRIGGER EXAMPLES:
 - small_talk: casual conversations, jokes
 */
 
-async function handleIntent(intent, entities, msg = null) {
+async function handleIntent(intent, entities, msg = null, userId = null) {
     switch (intent) {
         case "greeting":
             // Multiple friendly greetings in Roman Hindi + English
@@ -81,70 +82,79 @@ async function handleIntent(intent, entities, msg = null) {
             return cancelReplies[Math.floor(Math.random() * cancelReplies.length)];
 
         case "register_customer":
-            // Extract registration details from entities
-            const customerName = entities["customer_name:customer_name"]?.[0]?.value;
-            const customerPhone = entities["customer_phone:customer_phone"]?.[0]?.value;
-            const customerAddress = entities["customer_address:customer_address"]?.[0]?.value;
-            const customerGender = entities["customer_gender:customer_gender"]?.[0]?.value;
-            const customerAge = entities["customer_age:customer_age"]?.[0]?.value;
+            if (!userId) {
+                return "❌ Session error. Please try again.";
+            }
+
+            // Extract new registration details from entities
+            const newData = {};
+            if (entities["customer_name:customer_name"]?.[0]?.value) {
+                newData.name = entities["customer_name:customer_name"][0].value;
+            }
+            if (entities["customer_phone:customer_phone"]?.[0]?.value) {
+                newData.phone = entities["customer_phone:customer_phone"][0].value;
+            }
+            if (entities["customer_address:customer_address"]?.[0]?.value) {
+                newData.address = entities["customer_address:customer_address"][0].value;
+            }
+            if (entities["customer_gender:customer_gender"]?.[0]?.value) {
+                newData.gender = entities["customer_gender:customer_gender"][0].value;
+            }
+            if (entities["customer_age:customer_age"]?.[0]?.value) {
+                newData.age = entities["customer_age:customer_age"][0].value;
+            }
+
+            // Update session with new data (merge with existing)
+            const updatedData = userSessions.updateRegistrationData(userId, newData);
             
-            // Check if we have all required details
-            const hasName = customerName && customerName.trim().length > 0;
-            const hasPhone = customerPhone && customerPhone.trim().length > 0;
-            const hasAddress = customerAddress && customerAddress.trim().length > 0;
-            const hasAge = customerAge && customerAge.trim().length > 0;
-            
-            // If all required details are present, complete registration
-            if (hasName && hasPhone && hasAddress && hasAge) {
-                let registrationSuccess = `🎉 Registration Successful! Welcome ${customerName}!\n\n`;
+            // Check if registration is complete
+            if (userSessions.isRegistrationComplete(userId)) {
+                const completeData = userSessions.getRegistrationSummary(userId);
+                
+                let registrationSuccess = `🎉 Registration Successful! Welcome ${completeData.name}!\n\n`;
                 registrationSuccess += `✅ Registration Details:\n`;
-                registrationSuccess += `✓ Full name: ${customerName}\n`;
-                if (customerAge) {
-                    registrationSuccess += `✓ Age: ${customerAge} years\n`;
+                registrationSuccess += `✓ Full name: ${completeData.name}\n`;
+                registrationSuccess += `✓ Age: ${completeData.age} years\n`;
+                if (completeData.gender) {
+                    registrationSuccess += `✓ Gender: ${completeData.gender}\n`;
                 }
-                if (customerGender) {
-                    registrationSuccess += `✓ Gender: ${customerGender}\n`;
-                }
-                registrationSuccess += `✓ Phone number: ${customerPhone}\n`;
-                registrationSuccess += `✓ Delivery address: ${customerAddress}\n\n`;
+                registrationSuccess += `✓ Phone number: ${completeData.phone}\n`;
+                registrationSuccess += `✓ Delivery address: ${completeData.address}\n\n`;
                 registrationSuccess += `🥬 Account ready hai! Ab vegetables order kar sakte hain!\n`;
                 registrationSuccess += `Type "Menu" to see available options 😊`;
                 
+                // Clear registration data after successful completion
+                userSessions.clearRegistration(userId);
+                
                 return registrationSuccess;
             } 
-            // If some details are missing, show what we have and what's needed
+            // If some details are missing, show progress
             else {
                 let partialRegistration = `📝 Registration in progress...\n\n`;
                 
-                // Show what we have
-                if (hasName || hasPhone || hasAddress || customerGender || hasAge) {
+                // Show what we have collected so far
+                const currentData = userSessions.getRegistrationSummary(userId);
+                if (Object.keys(currentData).length > 0) {
                     partialRegistration += `✅ Received Details:\n`;
-                    if (hasName) partialRegistration += `✓ Full name: ${customerName}\n`;
-                    if (hasAge) partialRegistration += `✓ Age: ${customerAge} years\n`;
-                    if (customerGender) partialRegistration += `✓ Gender: ${customerGender}\n`;
-                    if (hasPhone) partialRegistration += `✓ Phone number: ${customerPhone}\n`;
-                    if (hasAddress) partialRegistration += `✓ Delivery address: ${customerAddress}\n`;
+                    if (currentData.name) partialRegistration += `✓ Full name: ${currentData.name}\n`;
+                    if (currentData.age) partialRegistration += `✓ Age: ${currentData.age} years\n`;
+                    if (currentData.gender) partialRegistration += `✓ Gender: ${currentData.gender}\n`;
+                    if (currentData.phone) partialRegistration += `✓ Phone number: ${currentData.phone}\n`;
+                    if (currentData.address) partialRegistration += `✓ Delivery address: ${currentData.address}\n`;
                     partialRegistration += `\n`;
                 }
                 
                 // Show what's still needed
                 partialRegistration += `❌ Still needed:\n`;
-                if (!hasName) partialRegistration += `✗ Full name\n`;
-                if (!hasAge) partialRegistration += `✗ Age\n`;
-                if (!hasPhone) partialRegistration += `✗ Phone number\n`;
-                if (!hasAddress) partialRegistration += `✗ Delivery address\n`;
+                if (!currentData.name) partialRegistration += `✗ Full name\n`;
+                if (!currentData.age) partialRegistration += `✗ Age\n`;
+                if (!currentData.phone) partialRegistration += `✗ Phone number\n`;
+                if (!currentData.address) partialRegistration += `✗ Delivery address\n`;
                 
                 partialRegistration += `\nPlease provide missing details to complete registration! 😊`;
                 
                 return partialRegistration;
             }
-            
-            // Fallback if no entities detected
-            const registrationReplies = [
-                "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Age (compulsory)\n3. Gender (optional)\n4. Mobile number\n5. Complete address\n6. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
-                "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Age (required)\n✓ Gender (optional)\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
-            ];
-            return registrationReplies[Math.floor(Math.random() * registrationReplies.length)];
 
         case "thanks":
             const thanksReplies = [

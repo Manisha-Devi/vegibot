@@ -5,7 +5,7 @@ const qrcode = require("qrcode-terminal");
 const witAiMessage = require("./config/wit");
 const handleIntent = require("./handlers/intentHandler");
 
-const client = new Client({ 
+const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
@@ -51,7 +51,7 @@ client.on("message", async (msg) => {
         await msg.getChat().then(chat => chat.sendStateTyping());
 
         const witData = await witAiMessage(msg.body);
-        
+
         if (!witData) {
             const errorMsg = "🤔 Sorry, samjhane me problem ho rahi hai. Thodi der baad try karo.";
             return client.sendMessage(msg.from, errorMsg);
@@ -66,22 +66,22 @@ client.on("message", async (msg) => {
 
         // Intent detection with fallback logic
         let finalIntent = intent;
-        
+
         // Keyword-based fallback for low confidence
         if (confidence < 0.7) {
             const msgLower = msg.body.toLowerCase();
-            
+
             // Greeting keywords
             if (msgLower.match(/\b(hello|hi|hey|namaste|good morning|good evening)\b/i)) {
                 finalIntent = "greeting";
             }
             // Vegetable inquiry keywords
-            else if (msgLower.match(/\b(available|price|milega|kitna|rate)\b/i) && 
+            else if (msgLower.match(/\b(available|price|milega|kitna|rate)\b/i) &&
                      msgLower.match(/\b(tomato|onion|potato|vegetable|sabzi)\b/i)) {
                 finalIntent = "vegetable_inquiry";
             }
             // Order keywords
-            else if (msgLower.match(/\b(order|book|mangwana|chahiye)\b/i) && 
+            else if (msgLower.match(/\b(order|book|mangwana|chahiye)\b/i) &&
                      msgLower.match(/\b(kg|kilo|grams)\b/i)) {
                 finalIntent = "place_order";
             }
@@ -99,15 +99,15 @@ client.on("message", async (msg) => {
                 return client.sendMessage(msg.from, clarificationMsg);
             }
         }
-        
+
         console.log(`👉 Final Intent: ${finalIntent} (Original: ${intent}, Confidence: ${confidence})`);
 
-        const reply = await handleIntent(finalIntent, entities, msg);
-        
+        const reply = await handleIntent(finalIntent, entities, msg.body, msg.from);
+
         // Clear typing and send reply
         await msg.getChat().then(chat => chat.clearState());
         await client.sendMessage(msg.from, reply);
-        
+
         console.log(`🤖 Bot Reply: ${reply}`);
 
     } catch (error) {
