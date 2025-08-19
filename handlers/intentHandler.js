@@ -120,7 +120,7 @@ async function handleIntent(intent, entities, msg = null) {
                 if (hasName || hasPhone || hasAddress || customerGender || hasAge) {
                     partialRegistration += `✅ Received Details:\n`;
                     if (hasName) partialRegistration += `✓ Full name: ${customerName}\n`;
-                    if (customerAge) partialRegistration += `✓ Age: ${customerAge} years\n`;
+                    if (hasAge) partialRegistration += `✓ Age: ${customerAge} years\n`;
                     if (customerGender) partialRegistration += `✓ Gender: ${customerGender}\n`;
                     if (hasPhone) partialRegistration += `✓ Phone number: ${customerPhone}\n`;
                     if (hasAddress) partialRegistration += `✓ Delivery address: ${customerAddress}\n`;
