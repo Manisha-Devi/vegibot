@@ -57,7 +57,59 @@ function doPost(e) {
   }
 }
 
+// Function to check if user already exists
+function checkUserExists(userId) {
+  try {
+    const spreadsheetId = 'YOUR_GOOGLE_SHEET_ID'; // Replace with your actual sheet ID
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getActiveSheet();
+    
+    // If sheet is empty, user doesn't exist
+    if (sheet.getLastRow() <= 1) {
+      return null;
+    }
+    
+    // Get all data from sheet
+    const data = sheet.getDataRange().getValues();
+    
+    // Skip header row and search for user
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === userId) { // User ID is in column A (index 0)
+        return {
+          user_id: data[i][0],
+          name: data[i][1],
+          age: data[i][2],
+          gender: data[i][3],
+          phone: data[i][4],
+          address: data[i][5],
+          registration_date: data[i][6],
+          timestamp: data[i][7]
+        };
+      }
+    }
+    
+    return null; // User not found
+  } catch (error) {
+    console.error('Error checking user:', error);
+    return null;
+  }
+}
+
 function doGet(e) {
+  const action = e.parameter.action;
+  const userId = e.parameter.user_id;
+  
+  if (action === 'check_user' && userId) {
+    const userData = checkUserExists(userId);
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        success: true,
+        user_exists: userData !== null,
+        user_data: userData
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
   return ContentService
     .createTextOutput('VegiBot Google Apps Script is running!')
     .setMimeType(ContentService.MimeType.TEXT);

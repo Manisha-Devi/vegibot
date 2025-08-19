@@ -36,4 +36,29 @@ async function callAppScript(intent, data) {
     }
 }
 
-module.exports = callAppScript;
+// Function to check if user already exists
+async function checkUserExists(userId) {
+    try {
+        const url = `${process.env.APPS_SCRIPT_URL}?action=check_user&user_id=${encodeURIComponent(userId)}`;
+        
+        console.log("📤 Checking user exists:", userId);
+        
+        const resp = await axios.get(url, {
+            timeout: 10000 // 10 second timeout
+        });
+        
+        console.log("📥 User check response:", resp.data);
+        
+        if (resp.data.success) {
+            return resp.data.user_exists ? resp.data.user_data : null;
+        } else {
+            return null;
+        }
+        
+    } catch (err) {
+        console.error("❌ User Check Error:", err.message);
+        return null;
+    }
+}
+
+module.exports = { callAppScript, checkUserExists };
