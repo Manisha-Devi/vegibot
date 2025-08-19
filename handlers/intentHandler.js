@@ -1,6 +1,6 @@
 
 // handlers/intentHandler.js
-// const callN8n = require("../services/n8nService"); // Temporarily disabled
+const callN8n = require("../services/n8nService"); // Enable n8n service
 const { updateRegistrationData, getRegistrationData, clearUserSession } = require("../utils/userSessions");
 
 // Intent Examples for better understanding:
@@ -112,6 +112,30 @@ async function handleIntent(intent, entities, msg = null) {
 
             // If all required details are present, complete registration
             if (hasName && hasPhone && hasAddress && hasAge && hasGender) {
+                try {
+                    // Store data in Google Sheets via n8n
+                    const sheetData = {
+                        action: 'store_registration',
+                        customer_data: {
+                            user_id: userId,
+                            name: registrationData.name,
+                            age: registrationData.age,
+                            gender: registrationData.gender,
+                            phone: registrationData.phone,
+                            address: registrationData.address,
+                            registration_date: new Date().toISOString(),
+                            timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                        }
+                    };
+                    
+                    // Call n8n to store in Google Sheets
+                    await callN8n('register_customer', sheetData);
+                    console.log(`✅ Registration data stored in Google Sheets for user: ${userId}`);
+                } catch (error) {
+                    console.error('❌ Error storing registration in Google Sheets:', error);
+                    // Continue with registration even if sheet storage fails
+                }
+                
                 let registrationSuccess = `🎉 Registration Successful! Welcome ${registrationData.name}!\n\n`;
                 registrationSuccess += `✅ Registration Details:\n`;
                 registrationSuccess += `✓ Full name: ${registrationData.name}\n`;
