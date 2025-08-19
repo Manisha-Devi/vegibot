@@ -81,6 +81,58 @@ async function handleIntent(intent, entities, msg = null) {
             return cancelReplies[Math.floor(Math.random() * cancelReplies.length)];
 
         case "register_customer":
+            // Extract registration details from entities
+            const customerName = entities["customer_name:customer_name"]?.[0]?.value;
+            const customerPhone = entities["customer_phone:customer_phone"]?.[0]?.value;
+            const customerAddress = entities["customer_address:customer_address"]?.[0]?.value;
+            const customerGender = entities["customer_gender:customer_gender"]?.[0]?.value;
+            
+            // Check if we have all required details
+            const hasName = customerName && customerName.trim().length > 0;
+            const hasPhone = customerPhone && customerPhone.trim().length > 0;
+            const hasAddress = customerAddress && customerAddress.trim().length > 0;
+            
+            // If all required details are present, complete registration
+            if (hasName && hasPhone && hasAddress) {
+                let registrationSuccess = `🎉 Registration Successful! Welcome ${customerName}!\n\n`;
+                registrationSuccess += `✅ Registration Details:\n`;
+                registrationSuccess += `✓ Full name: ${customerName}\n`;
+                if (customerGender) {
+                    registrationSuccess += `✓ Gender: ${customerGender}\n`;
+                }
+                registrationSuccess += `✓ Phone number: ${customerPhone}\n`;
+                registrationSuccess += `✓ Delivery address: ${customerAddress}\n\n`;
+                registrationSuccess += `🥬 Account ready hai! Ab vegetables order kar sakte hain!\n`;
+                registrationSuccess += `Type "Menu" to see available options 😊`;
+                
+                return registrationSuccess;
+            } 
+            // If some details are missing, show what we have and what's needed
+            else {
+                let partialRegistration = `📝 Registration in progress...\n\n`;
+                
+                // Show what we have
+                if (hasName || hasPhone || hasAddress || customerGender) {
+                    partialRegistration += `✅ Received Details:\n`;
+                    if (hasName) partialRegistration += `✓ Full name: ${customerName}\n`;
+                    if (customerGender) partialRegistration += `✓ Gender: ${customerGender}\n`;
+                    if (hasPhone) partialRegistration += `✓ Phone number: ${customerPhone}\n`;
+                    if (hasAddress) partialRegistration += `✓ Delivery address: ${customerAddress}\n`;
+                    partialRegistration += `\n`;
+                }
+                
+                // Show what's still needed
+                partialRegistration += `❌ Still needed:\n`;
+                if (!hasName) partialRegistration += `✗ Full name\n`;
+                if (!hasPhone) partialRegistration += `✗ Phone number\n`;
+                if (!hasAddress) partialRegistration += `✗ Delivery address\n`;
+                
+                partialRegistration += `\nPlease provide missing details to complete registration! 😊`;
+                
+                return partialRegistration;
+            }
+            
+            // Fallback if no entities detected
             const registrationReplies = [
                 "📝 Registration ke liye ye details chahiye:\n\n1. Aapka naam\n2. Mobile number\n3. Complete address\n4. Area/locality\n\nYe details share karo, account ready kar dunga! 😊",
                 "🆕 New account banana hai? Great!\n\nBas ye details send karo:\n✓ Full name\n✓ Phone number\n✓ Delivery address\n✓ Pin code\n\nAccount setup ho jayega! 👍"
